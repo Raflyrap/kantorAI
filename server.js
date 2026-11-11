@@ -567,7 +567,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
   officeState.employees.kevin.status = 'working';
   console.log(`[Stage 6] Dimas dan Kevin melakukan audit teknis dan QA browser...`);
 
-  let codeReviewNotes = "Sintaks HTML5 valid, CSS variabel terstruktur rapi, CDN Tailwind/Google Fonts aktif, kontras warna memenuhi standar WCAG.";
+  let codeReviewNotes = "Review AI belum tersedia; belum ada validasi browser otomatis.";
   try {
     const dimasConf = EMPLOYEES_CONFIG.dimas;
     const promptDimas = `Review file website index.html untuk topik "${topic}". Pastikan sintaks HTML5 semantik (heading h1-h3, button form), aksesibilitas, dan tidak ada tag rusak. Berikan penilaian teknis 1-2 kalimat.`;
@@ -575,7 +575,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
     codeReviewNotes = dimasRes.text;
   } catch (e) { }
 
-  let qaNotes = "Uji responsivitas lolos di viewport mobile (375px), tablet (768px), dan desktop (1440px). FAQ accordion interaktif dan form berjalan lancar.";
+  let qaNotes = "Pengujian browser otomatis belum dijalankan; diperlukan pengecekan manual.";
   try {
     const kevinConf = EMPLOYEES_CONFIG.kevin;
     const promptKevin = `Uji skenario tampilan responsif dan interaktivitas tombol/form untuk website "${topic}". Laporkan hasil uji browser dalam 1-2 kalimat ringkas.`;
@@ -583,8 +583,8 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
     qaNotes = kevinRes.text;
   } catch (e) { }
 
-  recordDialog('dimas', 'adam', `Adam, hasil review teknis: ${codeReviewNotes.slice(0, 80)}... Kode aman dan siap lanjut!`, 6);
-  recordDialog('kevin', 'adam', `Adam, hasil uji responsif: ${qaNotes.slice(0, 80)}... Tampilan sangat mulus di semua device!`, 6);
+  recordDialog('dimas', 'adam', `Adam, catatan review AI (belum merupakan verifikasi otomatis): ${codeReviewNotes.slice(0, 150)}`, 6);
+  recordDialog('kevin', 'adam', `Adam, catatan QA (browser belum diuji otomatis): ${qaNotes.slice(0, 150)}`, 6);
   await new Promise(r => setTimeout(r, 1200));
   officeState.employees.dimas.status = 'idle';
   officeState.employees.kevin.status = 'idle';
@@ -1266,7 +1266,7 @@ const server = http.createServer(async (req, res) => {
 
       // KASUS A1: Checkpoint 2 sedang pending (Dimas menunggu persetujuan copy & design)
       if (officeState.checkpoints.checkpoint2 && officeState.checkpoints.checkpoint2.status === 'pending') {
-        const isApproval = /setuju|lanjut|acc|ok|oke|gas|siap|bagus|mantap|keren|lanjutkan|yes|approve|proceed/i.test(msg) || slug === 'dimas' || slug === 'raka';
+        const isApproval = /^(setuju|lanjut|acc|oke|ok|gas|lanjutkan|approve)([.! ]*)$/i.test(msg);
         if (isApproval) {
           console.log(`-> Bos Rafly menyetujui Checkpoint 2 via chat: "${msg}"!`);
           advanceFromCheckpoint2(true, msg).catch(e => console.error('CP2 advance error:', e));
@@ -1294,6 +1294,13 @@ const server = http.createServer(async (req, res) => {
         const matchConcept = msg.match(/[#\s](\d)/);
         if (matchConcept) selectedConceptId = parseInt(matchConcept[1], 10);
 
+        if (!/^(pilih\\s*)?(konsep\\s*)?[123]$|^(setuju|acc|lanjut)(\\s*(konsep\\s*)?[123])?$/i.test(msg)) {
+          const replyText = 'Untuk checkpoint konsep, pilih secara jelas: "pilih 1", "pilih 2", atau "pilih 3". Kalau ingin revisi, tulis kebutuhan revisinya; saya tidak akan menganggapnya persetujuan otomatis.';
+          recordDialog('bagas', 'rafly', replyText, 3);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, agent: 'bagas', reply: replyText }));
+          return;
+        }
         advanceFromCheckpoint1(selectedConceptId, msg).catch(e => console.error('CP1 advance error:', e));
 
         const replyText = `Terima kasih banyak atas pilihannya, Bos Rafly! Konsep #${selectedConceptId} langsung saya kunci dan oper ke Sari (Copywriter) dan Luna (UI/UX Designer) sekarang juga.`;
