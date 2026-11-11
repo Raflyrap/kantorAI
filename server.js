@@ -85,6 +85,50 @@ const EMPLOYEE_THINKING_GUIDE = [
   'Jangan mengklaim memiliki kesadaran atau pikiran manusia. Kamu adalah asisten AI.'
 ].join(' ');
 
+// Discovery-first intake: no project starts before the owner confirms a brief.
+const projectIntake = { active: false, step: 0, answers: {}, initiator: 'raka' };
+const intakeFields = [
+  ['type', 'Jenis website apa yang dibutuhkan? (company profile, toko online, landing page, portofolio, blog, atau jenis lain)'],
+  ['name', 'Apa nama brand, perusahaan, atau website-nya?'],
+  ['purpose', 'Apa tujuan utama website dan siapa target pengunjungnya?'],
+  ['pages', 'Halaman apa saja yang harus ada? Contoh: Beranda, Tentang Kami, Layanan, Produk, Kontak.'],
+  ['content', 'Ceritakan profil bisnis, layanan/produk, keunggulan, dan informasi nyata yang wajib ditampilkan. Kalau belum ada, tulis "belum ada".'],
+  ['design', 'Untuk UI/UX, mau gaya seperti apa? Sebut warna, nuansa (minimalis/premium/playful), dan contoh website jika ada.'],
+  ['features', 'Fitur apa yang diperlukan? Misalnya katalog, keranjang, WhatsApp, formulir kontak, pencarian, atau dashboard.'],
+  ['contact', 'Kontak, alamat, media sosial, dan CTA yang ingin ditampilkan? Tulis "belum ada" jika belum tersedia.']
+];
+function intakeQuestion() {
+  return intakeFields[projectIntake.step][1] + ' (Pertanyaan ' + (projectIntake.step + 1) + '/' + intakeFields.length + ')';
+}
+function intakeSummary() {
+  return intakeFields.map(([key]) => key + ': ' + projectIntake.answers[key]).join('\\n');
+}
+function pagesFromBrief(brief) {
+  const raw = String(brief.pages || '');
+  const requested = raw.split(/[,;\\n]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
+  const names = requested.length ? requested : ['Beranda', 'Tentang Kami', 'Layanan', 'Kontak'];
+  if (!names.some(n => /beranda|home|utama/i.test(n))) names.unshift('Beranda');
+  const used = new Set();
+  return names.map((name, i) => {
+    let slug = i === 0 ? 'index' : name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) slug = 'halaman-' + i;
+    let unique = slug, k = 2;
+    while (used.has(unique)) unique = slug + '-' + k++;
+    used.add(unique);
+    return { name, file: unique + '.html' };
+  });
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+function buildProjectPage(brief, page, pages, pageText) {
+  const brand = escapeHtml(brief.name);
+  const heading = escapeHtml(page.name);
+  const nav = pages.map(p => '<a href="' + encodeURIComponent(p.file) + '"' + (p.file === page.file ? ' aria-current="page"' : '') + '>' + escapeHtml(p.name) + '</a>').join('');
+  const paragraphs = String(pageText || brief.content).split(/\\n+/).filter(Boolean).slice(0, 7).map(p => '<p>' + escapeHtml(p) + '</p>').join('');
+  return '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="' + escapeHtml(brief.purpose) + '"><title>' + heading + ' | ' + brand + '</title><style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.7 system-ui,sans-serif;background:#10111c;color:#f5f3ff}header{position:sticky;top:0;background:#17182aee;backdrop-filter:blur(16px);border-bottom:1px solid #ffffff22;padding:18px max(5vw,20px);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.logo{font-size:22px;font-weight:800;color:#ddd0ff;text-decoration:none}nav{display:flex;gap:18px;flex-wrap:wrap}nav a{color:#c9c7d6;text-decoration:none}nav a:hover,nav a[aria-current]{color:#b99cff}main{max-width:1050px;margin:auto;padding:clamp(55px,9vw,110px) 24px;min-height:70vh}small{color:#b99cff;font-weight:700;letter-spacing:.1em;text-transform:uppercase}h1{font-size:clamp(38px,6vw,70px);letter-spacing:-.055em;line-height:1.08;margin:18px 0 24px}p{color:#c8c5d8;max-width:760px}.content{background:#1c1b30;border:1px solid #ffffff1c;border-radius:22px;padding:clamp(24px,4vw,45px);margin-top:30px}footer{border-top:1px solid #ffffff20;padding:30px 5vw;color:#aaa6bd}a:focus-visible{outline:2px solid #b99cff;outline-offset:4px}@media(max-width:600px){header{align-items:flex-start}nav{gap:12px}}</style></head><body><header><a class="logo" href="index.html">' + brand + '</a><nav aria-label="Navigasi utama">' + nav + '</nav></header><main><small>' + escapeHtml(brief.type) + '</small><h1>' + heading + '</h1><p>' + escapeHtml(brief.purpose) + '</p><div class="content">' + (paragraphs || '<p>Konten halaman ini belum diberikan. Silakan lengkapi materi sesuai kebutuhan bisnis.</p>') + '</div></main><footer>' + brand + ' &middot; ' + escapeHtml(brief.contact) + '</footer></body></html>';
+}
+
 // 2. In-Memory Office State & 9-Stage State Machine for Website
 const officeState = {
   currentProjectId: 'default-project',
@@ -134,6 +178,9 @@ const officeState = {
 // Reset State Helper (Menghasilkan Project ID baru tanpa menghapus proyek lama)
 function resetOfficeState() {
   const newPid = 'proj-' + Date.now();
+  projectIntake.active = false;
+  projectIntake.step = 0;
+  projectIntake.answers = {};
   officeState.currentProjectId = newPid;
   officeState.currentStage = 0;
   officeState.stageName = 'Standby (Semua Staf Menunggu Arahan Bos Rafly)';
@@ -226,6 +273,7 @@ function createZipBundle(sourceDir, zipFilePath) {
 async function startAutonomousDelegation(initiatorSlug, userTopic) {
   const pId = officeState.currentProjectId;
   officeState.topic = userTopic;
+  const approvedBrief = officeState.approvedBrief || null;
 
   // Siapkan folder projek
   const projDir = path.join(PROJECTS_DIR, pId);
@@ -246,14 +294,14 @@ async function startAutonomousDelegation(initiatorSlug, userTopic) {
 
   let rakaPlan = {
     projectName: userTopic,
-    pageType: "Landing Page",
+    pageType: approvedBrief?.type || "Website",
     sections: ["Hero", "Problem/Pain Points", "Solution & Benefits", "Feature Highlights", "Testimonials", "Pricing / Offer", "FAQ", "Footer CTA"],
     features: ["Responsive Navbar", "Interactive FAQ Accordion", "Contact / Newsletter Form", "Modern Card Layout"]
   };
 
   try {
     const rakaConf = EMPLOYEES_CONFIG.raka;
-    const promptRaka = `Instruksi Bos Rafly: "${userTopic}".\nBuat rencana website terstruktur dalam format JSON murni:\n{\n  "projectName": "...",\n  "pageType": "Landing Page",\n  "sections": ["Hero", "Benefits", "Features", "Testimonials", "FAQ", "CTA"],\n  "features": ["Responsive Navbar", "Interactive FAQ Accordion", "Lead Form"]\n}`;
+    const promptRaka = `Brief kebutuhan yang sudah dikonfirmasi Bos Rafly: ${JSON.stringify(approvedBrief)}. Instruksi: "${userTopic}".\nBuat rencana website terstruktur dalam format JSON murni:\n{\n  "projectName": "...",\n  "pageType": "sesuaikan jenis website pada brief",\n  "sections": ["Hero", "Benefits", "Features", "Testimonials", "FAQ", "CTA"],\n  "features": ["Responsive Navbar", "Interactive FAQ Accordion", "Lead Form"]\n}`;
     const rakaRes = await callAgent(rakaConf, promptRaka, pId);
     const m = rakaRes.text.match(/\{[\s\S]*\}/);
     if (m) rakaPlan = JSON.parse(m[0]);
@@ -261,6 +309,8 @@ async function startAutonomousDelegation(initiatorSlug, userTopic) {
     console.warn('Gagal parse rencana Raka, menggunakan fallback template:', e.message);
   }
 
+  rakaPlan.approvedBrief = approvedBrief;
+  rakaPlan.pages = approvedBrief ? pagesFromBrief(approvedBrief) : [{name:"Beranda",file:"index.html"}];
   fs.writeFileSync(path.join(projDir, 'project-plan.json'), JSON.stringify(rakaPlan, null, 2));
 
   const rakaBrief = `Tim, Bos Rafly memberikan proyek: "${userTopic}". Rencana struktur website: ${rakaPlan.sections.join(' -> ')}. Rina, silakan mulai riset audiens & value proposition!`;
@@ -484,6 +534,24 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
 
   const indexPath = path.join(webDir, 'index.html');
   fs.writeFileSync(indexPath, htmlContent, 'utf8');
+  // Multi-page output based on the approved requirements, not a generic landing page.
+  if (approvedBrief) {
+    const pages = pagesFromBrief(approvedBrief);
+    let pageCopy = {};
+    try {
+      const adamConf = EMPLOYEES_CONFIG.adam;
+      const prompt = 'Buat konten berbeda untuk setiap halaman website sesuai brief. Jangan mengarang fakta, testimoni, harga, alamat, atau kontak. Balas JSON object murni dengan key nama file dan value teks isi halaman. Brief: ' + JSON.stringify(approvedBrief) + '. Halaman: ' + JSON.stringify(pages);
+      const ai = await callAgent(adamConf, prompt, pId);
+      const match = ai.text.match(/\\{[\\s\\S]*\\}/);
+      if (match) pageCopy = JSON.parse(match[0]);
+    } catch (err) { console.warn('[Adam] Konten halaman fallback ke brief:', err.message); }
+    for (const page of pages) {
+      const text = typeof pageCopy[page.file] === 'string' ? pageCopy[page.file] : approvedBrief.content;
+      fs.writeFileSync(path.join(webDir, page.file), buildProjectPage(approvedBrief, page, pages, text), 'utf8');
+    }
+    fs.writeFileSync(path.join(projDir, 'approved-brief.json'), JSON.stringify(approvedBrief, null, 2));
+    recordDialog('adam', 'dimas', 'Website multi-halaman selesai: ' + pages.map(p => p.file).join(', ') + '. Semua navigasi menggunakan href lokal.', 5);
+  }
   console.log(`[Adam] File website berhasil ditulis (100% SVG, 0 emoji): ${indexPath}`);
   console.log(`[Adam] File website berhasil ditulis: ${indexPath}`);
 
@@ -1270,29 +1338,45 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      // KASUS B: Bos Rafly memberikan tugas / instruksi baru pembuatan website
-      const isTaskInstruction = /buat|bikin|kerjakan|website|web|landing|page|dashboard|kursus|toko|portofolio|projek|topik/i.test(msg) || msg.length > 15;
-
-      if (isTaskInstruction && officeState.currentStage === 0) {
-        let extractedTopic = msg.replace(/^(buatkan|buat|bikin|tolong|coba)\s+/i, '').trim();
-        if (extractedTopic.length > 60) extractedTopic = extractedTopic.slice(0, 60);
-
-        const acknowledgeReply = `Siap Bos Rafly! Tugas website "${extractedTopic}" saya terima. Saya langsung susun rencana halaman, membagi tugas ke tim, dan memulai alur kerja 9 tahap secara realtime!`;
-        recordDialog(slug, 'rafly', acknowledgeReply, 1);
-
-        startAutonomousDelegation(slug, extractedTopic).catch(e => console.error('Delegation error:', e));
-
+      // Intake with explicit approval before the nine-stage workflow.
+      const isTaskInstruction = /buat|bikin|kerjakan|website|web|landing|page|dashboard|toko|portofolio|company|profil|blog/i.test(msg);
+      if (officeState.currentStage === 0 && (projectIntake.active || isTaskInstruction)) {
+        let replyText, action = 'briefing';
+        if (!projectIntake.active) {
+          projectIntake.active = true;
+          projectIntake.step = 0;
+          projectIntake.answers = {};
+          projectIntake.initiator = slug;
+          projectIntake.originalRequest = msg;
+          replyText = 'Sebelum tim mulai bekerja, saya perlu memahami kebutuhan website agar hasilnya tidak salah jenis. ' + intakeQuestion();
+        } else if (projectIntake.step < intakeFields.length) {
+          const [field] = intakeFields[projectIntake.step];
+          projectIntake.answers[field] = msg.slice(0, 2500);
+          projectIntake.step++;
+          if (projectIntake.step < intakeFields.length) {
+            replyText = 'Baik, sudah saya catat. ' + intakeQuestion();
+          } else {
+            replyText = 'Ini rangkuman kebutuhan yang akan saya kirim ke seluruh tim:\\n' + intakeSummary() + '\\n\\nApakah semua sudah benar? Balas "setuju mulai" untuk memulai, atau "revisi" untuk mengisi ulang brief.';
+            action = 'awaiting_brief_approval';
+          }
+        } else if (/^(setuju mulai|mulai proyek|brief disetujui)$/i.test(msg)) {
+          const brief = { ...projectIntake.answers };
+          officeState.approvedBrief = brief;
+          projectIntake.active = false;
+          replyText = 'Brief disetujui. Saya teruskan spesifikasi jenis website, halaman, konten, fitur, dan UI/UX ke Rina, Bagas, Sari, Luna, Adam, Dimas, Kevin, dan Nadia. Tim mulai bekerja sekarang.';
+          action = 'delegation_started';
+          recordDialog('raka', 'all', 'Brief final disetujui: ' + JSON.stringify(brief), 1);
+          startAutonomousDelegation('raka', brief.name + ' - ' + brief.type).catch(e => console.error('Delegation error:', e));
+        } else if (/^revisi/i.test(msg)) {
+          projectIntake.step = 0;
+          projectIntake.answers = {};
+          replyText = 'Oke, kita revisi dari awal supaya spesifikasinya tepat. ' + intakeQuestion();
+        } else {
+          replyText = 'Belum saya mulai karena brief belum dikonfirmasi. Balas "setuju mulai" jika benar, atau "revisi" jika ingin mengubahnya.\\n' + intakeSummary();
+        }
+        recordDialog('raka', 'rafly', replyText, officeState.currentStage);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: true,
-          agent: slug,
-          nama: conf.nama,
-          peran: conf.jabatan,
-          model: conf.model,
-          reply: acknowledgeReply,
-          action: 'delegation_started',
-          topic: extractedTopic
-        }));
+        res.end(JSON.stringify({ success: true, agent: slug, nama: conf.nama, peran: conf.jabatan, model: conf.model, reply: replyText, action }));
         return;
       }
 
