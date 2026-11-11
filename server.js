@@ -996,7 +996,12 @@ const server = http.createServer(async (req, res) => {
   // Keep the legacy 3D office accessible for existing AI workflows.
   if (req.method === 'GET' && (pathname === '/' || pathname === '/pixel' || pathname === '/index.html' || pathname === '/flystudio-pixel-office.html' || pathname === '/kantor-flystudio.html')) {
     const isLegacy = pathname === '/kantor-flystudio.html';
-    const page = path.join(ROOT_DIR, isLegacy ? 'kantor-flystudio.html' : 'flystudio-pixel-office.html');
+    const isPixel = pathname === '/pixel' || pathname === '/flystudio-pixel-office.html';
+    // Anime office becomes the default when the locally installed art asset exists.
+    // Otherwise keep the functional 2D office as a safe fallback.
+    const hasAnimeAsset = fs.existsSync(path.join(ROOT_DIR, 'flystudio-office-concept.png'));
+    const fileName = isLegacy ? 'kantor-flystudio.html' : isPixel || !hasAnimeAsset ? 'flystudio-pixel-office.html' : 'flystudio-anime-preview.html';
+    const page = path.join(ROOT_DIR, fileName);
     if (!fs.existsSync(page)) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Halaman kantor tidak ditemukan.');
