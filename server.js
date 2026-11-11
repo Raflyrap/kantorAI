@@ -992,33 +992,16 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
-  // Pixel office frontend: explicit allowlist, no filesystem path from user input.
-  // Keep the legacy 3D office accessible for existing AI workflows.
-  if (req.method === 'GET' && (pathname === '/' || pathname === '/pixel' || pathname === '/index.html' || pathname === '/flystudio-pixel-office.html' || pathname === '/kantor-flystudio.html')) {
-    const isPixel = pathname === '/pixel' || pathname === '/flystudio-pixel-office.html';
-    // Restore the original 3D office as the homepage; alternative experiments remain separate.
-    const page = path.join(ROOT_DIR, isPixel ? 'flystudio-pixel-office.html' : 'kantor-flystudio.html');
+  // Original 3D office — single supported main interface.
+  if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html' || pathname === '/kantor-flystudio.html')) {
+    const page = path.join(ROOT_DIR, 'kantor-flystudio.html');
     if (!fs.existsSync(page)) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Halaman kantor tidak ditemukan.');
+      res.end('Halaman kantor 3D tidak ditemukan.');
       return;
     }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
     fs.createReadStream(page).pipe(res);
-    return;
-  }
-
-  // Anime reference preview: isolated from the working AI interface.
-  if (req.method === 'GET' && (pathname === '/anime-preview' || pathname === '/flystudio-anime-preview.html' || pathname === '/flystudio-office-concept.png')) {
-    const isImage = pathname === '/flystudio-office-concept.png';
-    const file = path.join(ROOT_DIR, isImage ? 'flystudio-office-concept.png' : 'flystudio-anime-preview.html');
-    if (!fs.existsSync(file)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Aset pratinjau belum tersedia.');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': isImage ? 'image/png' : 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-    fs.createReadStream(file).pipe(res);
     return;
   }
 
