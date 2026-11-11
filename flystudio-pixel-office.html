@@ -6,7 +6,7 @@
 <header><div class="brand"><div class="logo">F</div><div><strong>FlyStudio</strong><small>AI Website Agency · Pixel Edition</small></div></div><div class="tag">◉ Bos Rafly</div></header>
 <div class="layout"><nav class="panel"><h3>MENU</h3><button class="active">⌂ Kantor</button><button id="original">▤ Sistem AI Asli</button><button id="team">♙ Tim AI (9)</button><p class="side-note">Kantor pixel 2.5D tanpa karakter. Avatar akan dipasang sebagai layer terpisah pada tahap berikutnya.</p></nav>
 <main class="stage"><div class="stage-head"><b>🏢 Kantor FlyStudio</b><small>Isometric pixel office · ruangan kosong</small></div><canvas id="office" width="1100" height="780" aria-label="Peta kantor isometric pixel art tanpa karakter"></canvas><div id="hint">Geser untuk memindahkan tampilan · Scroll untuk zoom</div><div class="toolbar"><button id="minus">− Zoom</button><button id="reset">Reset</button><button id="plus">+ Zoom</button></div></main>
-<aside class="right"><section class="panel"><h3>▤ Proyek Aktif <span class="chip">Demo UI</span></h3><div class="item"><span>Landing Page Coffee Shop</span><b>65%</b></div><div class="progress"><span style="width:65%"></span></div><div class="item"><span>Website Jasa Design</span><b>40%</b></div><div class="progress"><span style="width:40%"></span></div><div class="item"><span>Landing Page Event</span><b>20%</b></div><div class="progress"><span style="width:20%;background:#f5b43f"></span></div><small class="empty">Angka contoh visual, belum tersambung ke backend.</small></section><section class="panel"><h3>◷ Aktivitas Tim</h3><p class="empty">9 posisi karyawan disiapkan. Tidak ada avatar pada map ini sesuai permintaan. Aktivitas AI asli tetap berada di halaman lama.</p><button class="action" id="open-ai">Buka Sistem AI →</button></section><div class="footer">FlyStudio · Pixel Office Prototype</div></aside></div>
+<aside class="right"><section class="panel"><h3>▤ Proyek Aktif <span class="chip">Demo UI</span></h3><div class="item"><span>Landing Page Coffee Shop</span><b>65%</b></div><div class="progress"><span style="width:65%"></span></div><div class="item"><span>Website Jasa Design</span><b>40%</b></div><div class="progress"><span style="width:40%"></span></div><div class="item"><span>Landing Page Event</span><b>20%</b></div><div class="progress"><span style="width:20%;background:#f5b43f"></span></div><small class="empty" id="live-state">Menghubungkan backend AI…</small><div id="live-team" aria-live="polite"></div></section><section class="panel"><h3>◷ Aktivitas Tim</h3><p class="empty">9 posisi karyawan disiapkan. Tidak ada avatar pada map ini sesuai permintaan. Aktivitas AI asli tetap berada di halaman lama.</p><button class="action" id="open-ai">Buka Sistem AI →</button></section><div class="footer">FlyStudio · Pixel Office Prototype</div></aside></div>
 <script>
 (()=>{'use strict';const canvas=document.getElementById('office'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;const W=1100,H=780;let zoom=1,dx=0,dy=0,drag=null;const C={floor:'#7e698e',tile:'#9b82aa',edge:'#514160',wall:'#3d3157',wallTop:'#a48bb7',wood:'#b17c5c',woodTop:'#e4af80',screen:'#28233d',glow:'#aa7aff',green:'#66ad77',white:'#ded0ef'};
 function poly(pts,fill,stroke){ctx.beginPath();ctx.moveTo(...pts[0]);pts.slice(1).forEach(p=>ctx.lineTo(...p));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
@@ -46,4 +46,30 @@ ctx.restore()}
 function redraw(){draw()}function setZoom(v){zoom=Math.max(.65,Math.min(2.1,v));redraw()}
 document.getElementById('plus').onclick=()=>setZoom(zoom+.15);document.getElementById('minus').onclick=()=>setZoom(zoom-.15);document.getElementById('reset').onclick=()=>{zoom=1;dx=dy=0;redraw()};canvas.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom+(e.deltaY<0?.1:-.1))},{passive:false});canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,dx,dy};canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;const r=canvas.getBoundingClientRect();dx=drag.dx+(e.clientX-drag.x)*W/r.width;dy=drag.dy+(e.clientY-drag.y)*H/r.height;redraw()});canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
 function original(){location.href='/kantor-flystudio.html'}document.getElementById('original').onclick=original;document.getElementById('open-ai').onclick=original;document.getElementById('team').onclick=()=>alert('9 AI: Raka, Rina, Bagas, Sari, Dimas, Luna, Kevin, Adam, Nadia. Avatar sengaja belum ditampilkan di kantor.');redraw()})();
+</script><script>
+(function(){
+const names=['raka','rina','bagas','sari','dimas','luna','kevin','adam','nadia'];
+async function refresh(){
+ try{
+ const response=await fetch('/api/status',{cache:'no-store'});
+ if(!response.ok)throw Error('Backend tidak merespons');
+ const data=await response.json();
+ if(!data.success||!data.state)throw Error('Data status tidak valid');
+ const stage=Number(data.state.currentStage)||0;
+ document.getElementById('live-state').textContent='● Backend online · Tahap '+stage+' · Proyek: '+(data.state.topic||'Belum aktif');
+ const box=document.getElementById('live-team');
+ box.replaceChildren();
+ for(const slug of names){
+ const employee=data.state.employees?.[slug]||{};
+ const config=data.employeesConfig?.[slug]||{};
+ const item=document.createElement('div');
+ item.style.cssText='display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #463457;font-size:12px';
+ const name=document.createElement('strong');name.textContent=config.nama||slug;
+ const status=document.createElement('span');status.textContent=employee.status||'standby';status.style.color='#bea3e2';
+ item.append(name,status);box.append(item);
+ }
+ }catch(e){document.getElementById('live-state').textContent='○ Backend offline · Jalankan node server.js';}
+}
+refresh();setInterval(()=>{if(!document.hidden)refresh()},5000);
+})();
 </script></body></html>
