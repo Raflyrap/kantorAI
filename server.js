@@ -581,8 +581,8 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
           'Copywriting dari Sari: ' + JSON.stringify(copyData).slice(0, 6000)
         ].join('\\n\\n');
         const ai = await callAgent(adamConf, prompt, pId, { maxTokens: 7500 });
-        generatedHtml = ai.text.replace(/^\\s*```(?:html)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();
-        if (!/<!doctype html|<html[\\s>]/i.test(generatedHtml) || !generatedHtml.toLowerCase().includes('</html>')) {
+        generatedHtml = ai.text.replace(/^\s*```(?:html)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+        if (!/<!doctype html|<html[\s>]/i.test(generatedHtml) || !generatedHtml.toLowerCase().includes('</html>')) {
           throw new Error('HTML output incomplete');
         }
         // Prevent cross-project links; all generated files are local.
@@ -1269,7 +1269,7 @@ const server = http.createServer(async (req, res) => {
         const topic = meetingTopic(meetingBrief.messages);
         const brief = {
           type: topic || 'website',
-          name: (discussion.match(/(?:nama(?:nya| brand)?|brand)\\s*(?:adalah|:)?\\s*([\\w -]{3,45})/i)||[])[1] || 'Website Baru',
+          name: (discussion.match(/(?:nama(?:nya| brand)?|brand)\s*(?:adalah|:)?\s*([\\w -]{3,45})/i)||[])[1] || 'Website Baru',
           purpose: discussion.slice(0, 1200),
           pages: topic === 'toko online' ? 'Beranda, Produk, Kategori, Keranjang, Checkout, Tentang, Kontak' : 'Beranda, Tentang Kami, Layanan, Portofolio, Kontak',
           content: discussion.slice(0, 4500),
@@ -1437,7 +1437,7 @@ const server = http.createServer(async (req, res) => {
         const matchConcept = msg.match(/[#\s](\d)/);
         if (matchConcept) selectedConceptId = parseInt(matchConcept[1], 10);
 
-        if (!/^(?:(?:pilih|konsep)\\s*)?[123]$|^(?:setuju|acc|lanjut)(?:\\s*(?:konsep\\s*)?[123])?$/i.test(msg)) {
+        if (!/^(?:(?:pilih|konsep)\s*)?[123]$|^(?:setuju|acc|lanjut)(?:\s*(?:konsep\s*)?[123])?$/i.test(msg)) {
           const replyText = 'Untuk checkpoint konsep, pilih secara jelas: "pilih 1", "pilih 2", atau "pilih 3". Kalau ingin revisi, tulis kebutuhan revisinya; saya tidak akan menganggapnya persetujuan otomatis.';
           recordDialog('bagas', 'rafly', replyText, 3);
           res.writeHead(200, { 'Content-Type': 'application/json' });
