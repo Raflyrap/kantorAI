@@ -1,0 +1,11 @@
+{
+  "name": "flystudio-ai-agency",
+  "version": "2.0.0",
+  "description": "FlyStudio AI Web Agency - 3D Virtual Office & Automated Website Builder Pipeline",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {}
+}
