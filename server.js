@@ -1007,6 +1007,20 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Anime reference preview: isolated from the working AI interface.
+  if (req.method === 'GET' && (pathname === '/anime-preview' || pathname === '/flystudio-anime-preview.html' || pathname === '/flystudio-office-concept.png')) {
+    const isImage = pathname === '/flystudio-office-concept.png';
+    const file = path.join(ROOT_DIR, isImage ? 'flystudio-office-concept.png' : 'flystudio-anime-preview.html');
+    if (!fs.existsSync(file)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Aset pratinjau belum tersedia.');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': isImage ? 'image/png' : 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    fs.createReadStream(file).pipe(res);
+    return;
+  }
+
   // 1. Static Preview Serving: GET /preview/:projectId/
   if (pathname.startsWith('/preview/')) {
     const parts = pathname.split('/').filter(Boolean);
