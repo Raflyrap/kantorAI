@@ -992,6 +992,21 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
+  // Pixel office frontend: explicit allowlist, no filesystem path from user input.
+  // Keep the legacy 3D office accessible for existing AI workflows.
+  if (req.method === 'GET' && (pathname === '/' || pathname === '/pixel' || pathname === '/index.html' || pathname === '/flystudio-pixel-office.html' || pathname === '/kantor-flystudio.html')) {
+    const isLegacy = pathname === '/kantor-flystudio.html';
+    const page = path.join(ROOT_DIR, isLegacy ? 'kantor-flystudio.html' : 'flystudio-pixel-office.html');
+    if (!fs.existsSync(page)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Halaman kantor tidak ditemukan.');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    fs.createReadStream(page).pipe(res);
+    return;
+  }
+
   // 1. Static Preview Serving: GET /preview/:projectId/
   if (pathname.startsWith('/preview/')) {
     const parts = pathname.split('/').filter(Boolean);
