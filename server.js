@@ -1278,7 +1278,7 @@ const server = http.createServer(async (req, res) => {
         const warranty = /(?:garansi|warranty)/i.test(all) ? (all.match(/(?:garansi|warranty)[^\\n]{0,35}/i)||[])[0] : (/ssebulan|sebulan|1 bulan/i.test(all) ? 'Garansi 1 bulan (jenis garansi belum dikonfirmasi)' : 'Garansi belum dikonfirmasi');
         const productCount = (all.match(/(?:^|\\n)\\s*(\\d{1,4})\\s*(?:produk)?(?:\\n|$)/)||[])[1] || '';
         const brand = (all.match(/(?:nama (?:toko|brand)|brand(?:-nya)?|tokonya)\\s*(?:adalah|:)?\\s*([^\\n,.]{2,50})/i)||[])[1] || 'Toko iPhone';
-        const designLine = userLines.filter(t => /dark|light|warna|aurora|minimalis|premium|modern|desain|tampilan|ui\\/ux/i.test(t)).join('; ');
+        const designLine = userLines.filter(t => /dark|light|warna|aurora|minimalis|premium|modern|desain|tampilan|ui.ux/i.test(t)).join('; ');
         const productInfo = userLines.filter(t => /iphone|produk|fisik|digital|operator|bypass|wifi|garansi|sebulan|30/i.test(t)).join('; ');
         const brief = {
           type: topic || 'website',
