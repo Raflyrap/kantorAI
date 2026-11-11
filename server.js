@@ -129,6 +129,26 @@ function buildProjectPage(brief, page, pages, pageText) {
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="' + escapeHtml(brief.purpose) + '"><title>' + heading + ' | ' + brand + '</title><style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.7 system-ui,sans-serif;background:#10111c;color:#f5f3ff}header{position:sticky;top:0;background:#17182aee;backdrop-filter:blur(16px);border-bottom:1px solid #ffffff22;padding:18px max(5vw,20px);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.logo{font-size:22px;font-weight:800;color:#ddd0ff;text-decoration:none}nav{display:flex;gap:18px;flex-wrap:wrap}nav a{color:#c9c7d6;text-decoration:none}nav a:hover,nav a[aria-current]{color:#b99cff}main{max-width:1050px;margin:auto;padding:clamp(55px,9vw,110px) 24px;min-height:70vh}small{color:#b99cff;font-weight:700;letter-spacing:.1em;text-transform:uppercase}h1{font-size:clamp(38px,6vw,70px);letter-spacing:-.055em;line-height:1.08;margin:18px 0 24px}p{color:#c8c5d8;max-width:760px}.content{background:#1c1b30;border:1px solid #ffffff1c;border-radius:22px;padding:clamp(24px,4vw,45px);margin-top:30px}footer{border-top:1px solid #ffffff20;padding:30px 5vw;color:#aaa6bd}a:focus-visible{outline:2px solid #b99cff;outline-offset:4px}@media(max-width:600px){header{align-items:flex-start}nav{gap:12px}}</style></head><body><header><a class="logo" href="index.html">' + brand + '</a><nav aria-label="Navigasi utama">' + nav + '</nav></header><main><small>' + escapeHtml(brief.type) + '</small><h1>' + heading + '</h1><p>' + escapeHtml(brief.purpose) + '</p><div class="content">' + (paragraphs || '<p>Konten halaman ini belum diberikan. Silakan lengkapi materi sesuai kebutuhan bisnis.</p>') + '</div></main><footer>' + brand + ' &middot; ' + escapeHtml(brief.contact) + '</footer></body></html>';
 }
 
+// Meeting-first discovery: collect a real group brief before running any stage.
+const meetingBrief = { messages: [], turn: 0, pending: false };
+const meetingTeam = ['rina','bagas','sari','luna','dimas','kevin','nadia','adam'];
+function meetingTopic(messages) {
+  const joined = messages.filter(m => m.role === 'user').map(m => m.text).join(' ').toLowerCase();
+  if (/toko|store|shop|jualan|ecommerce|e-commerce/.test(joined)) return 'toko online';
+  if (/company|perusahaan|company profile/.test(joined)) return 'company profile';
+  if (/landing/.test(joined)) return 'landing page';
+  if (/portofolio|portfolio/.test(joined)) return 'portofolio';
+  return '';
+}
+function meetingFallbackQuestion() {
+  const user = meetingBrief.messages.filter(m => m.role === 'user').map(m => m.text);
+  const topic = meetingTopic(meetingBrief.messages);
+  if (!topic) return 'Mau buat website jenis apa, Bos? Misalnya toko online, company profile, atau portofolio.';
+  if (user.length < 2) return 'Untuk ' + topic + ' ini, nama brand-nya apa dan mau tampil seperti apa?';
+  if (user.length < 3) return 'Halaman dan fitur apa yang paling penting untuk ' + topic + ' ini?';
+  if (user.length < 4) return 'UI/UX-nya mau warna dan gaya seperti apa? Ada referensi?';
+  return 'Ada detail tambahan atau revisi sebelum rapat ditutup? Kalau sudah jelas, klik Bubarkan Rapat untuk mulai pengerjaan.';
+}
 // 2. In-Memory Office State & 9-Stage State Machine for Website
 const officeState = {
   currentProjectId: 'default-project',
@@ -185,6 +205,10 @@ function resetOfficeState() {
   officeState.currentStage = 0;
   officeState.stageName = 'Standby (Semua Staf Menunggu Arahan Bos Rafly)';
   officeState.topic = '';
+  meetingBrief.messages = [];
+  meetingBrief.turn = 0;
+  meetingBrief.pending = false;
+  officeState.approvedBrief = null;
   officeState.meetingActive = false;
   officeState.waitingForAdvice = null;
   officeState.latestDelivery = null;
@@ -1227,6 +1251,91 @@ const server = http.createServer(async (req, res) => {
       try { payload = JSON.parse(body); } catch (e) { }
     }
 
+    // Meeting lifecycle: team discussion first; execution begins only when the meeting closes.
+    if (pathname === '/api/toggle-meeting' && req.method === 'POST') {
+      const active = payload.active === true;
+      if (active && officeState.currentStage !== 0) {
+        res.writeHead(409, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:false,error:'Proyek sedang berjalan. Selesaikan atau reset proyek sebelum rapat baru.'}));
+        return;
+      }
+      if (!active && officeState.meetingActive && meetingBrief.messages.some(m => m.role === 'user')) {
+        if (meetingBrief.pending) {
+          res.writeHead(409, {'Content-Type':'application/json'});
+          res.end(JSON.stringify({success:false,error:'Tunggu jawaban tim selesai sebelum menutup rapat.'}));
+          return;
+        }
+        const discussion = meetingBrief.messages.filter(m => m.role === 'user').map(m => m.text).join('\\n');
+        const topic = meetingTopic(meetingBrief.messages);
+        const brief = {
+          type: topic || 'website',
+          name: (discussion.match(/(?:nama(?:nya| brand)?|brand)\\s*(?:adalah|:)?\\s*([\\w -]{3,45})/i)||[])[1] || 'Website Baru',
+          purpose: discussion.slice(0, 1200),
+          pages: topic === 'toko online' ? 'Beranda, Produk, Kategori, Keranjang, Checkout, Tentang, Kontak' : 'Beranda, Tentang Kami, Layanan, Portofolio, Kontak',
+          content: discussion.slice(0, 4500),
+          design: discussion.slice(0, 1800),
+          features: discussion.slice(0, 2000),
+          contact: 'belum diberikan',
+          meetingTranscript: meetingBrief.messages
+        };
+        officeState.approvedBrief = brief;
+        officeState.meetingActive = false;
+        recordDialog('raka','all','Rapat ditutup. Brief hasil diskusi dibagikan ke seluruh tim dan eksekusi dimulai.',0);
+        startAutonomousDelegation('raka', topic || 'website sesuai hasil rapat').catch(e => console.error('Meeting delegation:',e));
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:true,started:true,message:'Rapat selesai. Tim mulai membangun website berdasarkan diskusi.'}));
+        return;
+      }
+      officeState.meetingActive = active;
+      if (active) {
+        meetingBrief.messages=[];meetingBrief.turn=0;meetingBrief.pending=false;
+        recordDialog('raka','rafly','Rapat dimulai. Bos, ceritakan kebutuhan website-nya. Tim akan bergantian memberikan masukan.',0);
+      }
+      res.writeHead(200, {'Content-Type':'application/json'});
+      res.end(JSON.stringify({success:true,active}));
+      return;
+    }
+    if (pathname === '/api/group-chat' && req.method === 'POST') {
+      if (!officeState.meetingActive || officeState.currentStage !== 0) {
+        res.writeHead(409, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:false,error:'Mulai rapat dahulu untuk membahas brief.'}));
+        return;
+      }
+      const message = String(payload.message || '').trim().slice(0,3000);
+      if (!message || meetingBrief.pending) {
+        res.writeHead(400, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:false,error:'Pesan kosong atau tim masih menjawab.'}));
+        return;
+      }
+      meetingBrief.pending = true;
+      meetingBrief.messages.push({role:'user',sender:'Bos',text:message});
+      recordDialog('rafly','all',message,0);
+      try {
+        const teamSlug = meetingTeam[meetingBrief.turn % meetingTeam.length];
+        const topic = meetingTopic(meetingBrief.messages);
+        const conversation = meetingBrief.messages.slice(-16).map(m => m.sender+': '+m.text).join('\\n');
+        const prompt = 'Kamu sedang rapat tim untuk website. Balas singkat maksimal 2 kalimat, relevan dengan diskusi. Jangan ulang pertanyaan yang sudah dijawab. Jenis website yang sudah diketahui: '+(topic||'belum jelas')+'. Riwayat rapat:\\n'+conversation+'\\nBerikan satu saran spesifik dari peranmu.';
+        let teammate = '';
+        try { teammate = (await callAgent(EMPLOYEES_CONFIG[teamSlug],prompt,officeState.currentProjectId)).text.slice(0,450); }
+        catch(e) { teammate='Saya catat kebutuhan ini. Pastikan fitur dan desain sesuai tujuan website.'; }
+        const q = meetingFallbackQuestion();
+        let raka = q;
+        try {
+          const ai = await callAgent(EMPLOYEES_CONFIG.raka,'Kamu PM rapat. Jenis website sudah diketahui: '+(topic||'belum jelas')+'. Riwayat:\\n'+conversation+'\\nBerikan SATU pertanyaan klarifikasi berikutnya, singkat dan tidak mengulang informasi yang sudah jelas. Jika pengguna baru menyebut jenis website, tanyakan detail website jenis itu. Jangan mulai eksekusi sebelum rapat ditutup.',officeState.currentProjectId);
+          if (ai.text.trim().length < 250 && ai.text.trim().length > 8) raka=ai.text.trim();
+        } catch(e) {}
+        const replies = [{sender:EMPLOYEES_CONFIG[teamSlug].nama,role:'assistant',text:teammate},{sender:'Raka',role:'assistant',text:raka}];
+        for(const r of replies){meetingBrief.messages.push({role:'assistant',sender:r.sender,text:r.text});recordDialog(r.sender.toLowerCase(),'rafly',r.text,0);}
+        meetingBrief.turn++;
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:true,replies}));
+      } catch(e) {
+        res.writeHead(500, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:false,error:e.message}));
+      } finally {meetingBrief.pending=false;}
+      return;
+    }
+
     // POST /api/reset (Reset Kantor & Mulai Projek Baru)
     if (pathname === '/api/reset' && req.method === 'POST') {
       resetOfficeState();
@@ -1285,6 +1394,18 @@ const server = http.createServer(async (req, res) => {
 
       console.log(`[Chat 1-on-1] Bos Rafly -> ${conf.nama}: "${msg}"`);
       recordDialog('rafly', slug, msg, officeState.currentStage);
+
+      if (officeState.currentStage === 0 && !officeState.meetingActive) {
+        const replyText = 'Untuk memulai proyek website, klik Meeting dan diskusikan kebutuhan bersama tim terlebih dahulu.';
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:true,agent:slug,nama:conf.nama,reply:replyText}));
+        return;
+      }
+      if (officeState.meetingActive && officeState.currentStage === 0) {
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({success:true,agent:slug,nama:conf.nama,reply:'Brief proyek dibahas di chat grup Ruang Rapat Utama.'}));
+        return;
+      }
 
       // KASUS A1: Checkpoint 2 sedang pending (Dimas menunggu persetujuan copy & design)
       if (officeState.checkpoints.checkpoint2 && officeState.checkpoints.checkpoint2.status === 'pending') {
