@@ -3576,14 +3576,22 @@ if(window.claude&&window.claude.use){
       var hist=window.CHAT_HIST&&window.CHAT_HIST.raka||[];
       var reply=hist.filter(function(m){return m.role==='assistant'}).slice(-1)[0];
       var t=reply&&reply.content||'';
-      if(/rangkuman kebutuhan|brief belum dikonfirmasi/i.test(t))return [['Setuju & Mulai','setuju mulai'],['Ubah Jawaban','revisi']];
-      if(/Jenis website apa/i.test(t))return [['Toko Online','toko online'],['Company Profile','company profile'],['Landing Page','landing page'],['Portofolio','portofolio']];
-      if(/Untuk UI\/UX/i.test(t))return [['Dark Premium','dark premium'],['Minimalis','minimalis modern'],['Light Clean','light clean'],['Bebas, rekomendasikan','bebas, rekomendasikan desain terbaik']];
-      if(/Fitur apa/i.test(t))return [['Katalog & Pencarian','katalog dan pencarian produk'],['Keranjang & Checkout','keranjang dan checkout'],['Chat WhatsApp','tombol WhatsApp'],['Rekomendasi AI','pilihkan fitur sesuai kebutuhan']];
-      if(/Halaman apa saja/i.test(t))return [['Pilihkan Otomatis','pilihkan halaman yang cocok untuk jenis website ini'],['5 Halaman','Beranda, Tentang, Produk, FAQ, Kontak'],['10 Halaman','pilihkan 10 halaman yang cocok']];
-      if(/Kontak, alamat/i.test(t))return [['Belum Ada','belum ada']];
-      if(/tujuan utama/i.test(t))return [['Jual Produk','menjual produk kepada calon pelanggan'],['Promosi Bisnis','memperkenalkan bisnis dan layanan'],['Portofolio','menampilkan karya dan proyek']];
+      var userMessages=hist.filter(function(m){return m.role==='user'}).map(function(m){return m.content}).join(' ').toLowerCase();
+      var store=/store|toko|shop|jualan|ecommerce|e-commerce/i.test(userMessages);
+      var company=/company|perusahaan|profil bisnis/i.test(userMessages);
+      if(/rangkuman kebutuhan|brief belum dikonfirmasi/i.test(t))return [['Setuju & Mulai','setuju mulai'],['Revisi Brief','revisi'],['Isi Sendiri',null]];
+      if(/Jenis website apa/i.test(t))return store?[['Toko Online','toko online'],['Katalog Produk','website katalog produk'],['Isi Sendiri',null]]:company?[['Company Profile','company profile'],['Company + Katalog','company profile dengan katalog produk'],['Isi Sendiri',null]]:[['Company Profile','company profile'],['Toko Online','toko online'],['Isi Sendiri',null]];
+      if(/nama brand|nama perusahaan|nama.*website/i.test(t))return [['Pakai Nama dari Brief',null],['Rekomendasikan Nama','rekomendasikan nama brand yang cocok'],['Isi Sendiri',null]];
+      if(/tujuan utama/i.test(t))return store?[['Jual Produk','menjual produk kepada pelanggan secara online'],['Katalog & Pesanan','menampilkan katalog dan menerima pesanan'],['Isi Sendiri',null]]:[['Kenalkan Bisnis','memperkenalkan perusahaan dan layanan kepada calon klien'],['Dapatkan Pelanggan','meningkatkan kepercayaan dan mendapatkan calon pelanggan'],['Isi Sendiri',null]];
+      if(/Halaman apa saja/i.test(t))return store?[['Halaman Toko Lengkap','Beranda, Produk, Kategori, Detail Produk, Keranjang, Checkout, Tentang, FAQ, Kontak'],['Toko Sederhana','Beranda, Produk, Keranjang, Checkout, Kontak'],['Isi Sendiri',null]]:[['Profil Lengkap','Beranda, Tentang Kami, Layanan, Portofolio, Kontak'],['Profil Ringkas','Beranda, Tentang Kami, Layanan, Kontak'],['Isi Sendiri',null]];
+      if(/Ceritakan profil bisnis/i.test(t))return [['Susun dari Info Ada','susun konten berdasarkan informasi yang sudah saya berikan, tandai yang belum diketahui'],['Pakai Placeholder','gunakan contoh konten placeholder yang jelas ditandai, jangan mengarang fakta'],['Isi Sendiri',null]];
+      if(/Untuk UI\/UX/i.test(t))return [['Dark Premium','dark premium modern dengan animasi halus'],['Minimalis Modern','minimalis modern yang bersih dan responsif'],['Isi Sendiri',null]];
+      if(/Fitur apa/i.test(t))return store?[['Fitur Toko','katalog, pencarian, keranjang dan checkout'],['Katalog & Chat','katalog, pencarian produk dan tombol WhatsApp'],['Isi Sendiri',null]]:[['Kontak & Form','form kontak, navigasi responsif dan CTA'],['Portofolio & Galeri','galeri portofolio, layanan dan form kontak'],['Isi Sendiri',null]];
+      if(/Kontak, alamat/i.test(t))return [['Belum Ada','belum ada'],['Tampilkan Form Kontak','kontak belum ada, sediakan form kontak contoh yang belum terhubung'],['Isi Sendiri',null]];
     }
+    if(cps.checkpoint1&&cps.checkpoint1.status==='pending')return [['Pilih Konsep 1','pilih 1'],['Pilih Konsep 2','pilih 2'],['Isi Sendiri',null]];
+    if(cps.checkpoint2&&cps.checkpoint2.status==='pending')return [['Setujui Desain','setuju'],['Minta Revisi','revisi desain'],['Isi Sendiri',null]];
+    if(cps.checkpoint3&&cps.checkpoint3.status==='pending')return [['Setujui Website','setuju'],['Minta Revisi','revisi website'],['Isi Sendiri',null]];
     return [];
   }
   function renderQuick(){
@@ -3594,18 +3602,15 @@ if(window.claude&&window.claude.use){
     if(!input||!state){if(old)old.remove();return}
     var opts=optionsFor(state,agent);
     var cps=state.checkpoints||{};
-    if(cps.checkpoint1&&cps.checkpoint1.status==='pending')opts=[['Pilih Konsep 1','pilih 1'],['Pilih Konsep 2','pilih 2'],['Pilih Konsep 3','pilih 3']];
-    if(cps.checkpoint2&&cps.checkpoint2.status==='pending')opts=[['Setujui Desain','setuju'],['Minta Revisi','revisi desain']];
-    if(cps.checkpoint3&&cps.checkpoint3.status==='pending')opts=[['Setujui Website','setuju'],['Minta Revisi','revisi website']];
     if(!opts.length){if(old)old.remove();return}
-    var key=agent+':'+opts.map(function(o){return o[1]}).join('|');
+    var key=agent+':'+opts.map(function(o){return o[0]+':'+o[1]}).join('|');
     if(old&&lastQuick===key)return;
     if(old)old.remove();
     lastQuick=key;
     var bar=document.createElement('div');bar.id='flystudio-quick-actions';
     opts.forEach(function(o,i){
       var b=document.createElement('button');b.textContent=o[0];if(i===0)b.className='primary';
-      b.onclick=function(){send(agent,o[1])};bar.appendChild(b);
+      b.onclick=function(){if(o[1]===null){input.focus();input.placeholder='Tulis jawaban sendiri di sini...';return;}send(agent,o[1])};bar.appendChild(b);
     });
     input.parentElement.insertAdjacentElement('beforebegin',bar);
   }
