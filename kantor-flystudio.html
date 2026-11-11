@@ -3541,5 +3541,91 @@ if(window.claude&&window.claude.use){
     <p class="soft" style="font-size:0.75rem;text-align:center;">Belum ada interaksi tercatat. Sapa atau kirim instruksi ke tim di Meja Rapat untuk memulai interaksi.</p>
   </div>
 </div>
+
+<style>
+#flystudio-quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;padding:12px;border:1px solid rgba(177,154,255,.25);border-radius:14px;background:rgba(25,22,43,.92)}
+#flystudio-quick-actions button{background:#393052;border:1px solid #75639c;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font:600 13px inherit;min-height:40px}
+#flystudio-quick-actions button:hover{background:#594578}
+#flystudio-quick-actions .primary{background:#7152b5}
+#flystudio-toast-stack{position:fixed;right:18px;top:75px;z-index:100001;display:grid;gap:9px;max-width:min(380px,calc(100vw - 36px))}
+.flystudio-toast{padding:14px 18px;border-radius:13px;background:#211d35;color:#fff;border:1px solid #8168b3;box-shadow:0 12px 40px #0008;font:14px/1.5 system-ui,sans-serif}
+.flystudio-toast button{margin-top:9px;padding:7px 13px;border-radius:8px;background:#7354b3;color:#fff;border:0;cursor:pointer}
+</style>
+<script>
+(function(){
+  var lastNotice = '';
+  var lastQuick = '';
+  function toast(message, action, callback){
+    var root=document.getElementById('flystudio-toast-stack');
+    if(!root){root=document.createElement('div');root.id='flystudio-toast-stack';document.body.appendChild(root)}
+    var el=document.createElement('div');el.className='flystudio-toast';
+    var msg=document.createElement('div');msg.textContent=message;el.appendChild(msg);
+    if(action){var b=document.createElement('button');b.textContent=action;b.onclick=function(){el.remove();callback&&callback()};el.appendChild(b)}
+    root.appendChild(el);setTimeout(function(){el.remove()},11000);
+  }
+  function send(slug, message){
+    var input=document.getElementById('chat-in-'+slug);
+    if(!input){if(typeof window.selectAgent==='function')window.selectAgent(slug);setTimeout(function(){send(slug,message)},200);return}
+    input.value=message;
+    window.sendAgentChat(slug);
+  }
+  function optionsFor(state,slug){
+    var cps=state&&state.checkpoints||{};
+    if(slug==='raka'&&state.currentStage===0){
+      var hist=window.CHAT_HIST&&window.CHAT_HIST.raka||[];
+      var reply=hist.filter(function(m){return m.role==='assistant'}).slice(-1)[0];
+      var t=reply&&reply.content||'';
+      if(/rangkuman kebutuhan|brief belum dikonfirmasi/i.test(t))return [['Setuju & Mulai','setuju mulai'],['Ubah Jawaban','revisi']];
+      if(/Jenis website apa/i.test(t))return [['Toko Online','toko online'],['Company Profile','company profile'],['Landing Page','landing page'],['Portofolio','portofolio']];
+      if(/Untuk UI\/UX/i.test(t))return [['Dark Premium','dark premium'],['Minimalis','minimalis modern'],['Light Clean','light clean'],['Bebas, rekomendasikan','bebas, rekomendasikan desain terbaik']];
+      if(/Fitur apa/i.test(t))return [['Katalog & Pencarian','katalog dan pencarian produk'],['Keranjang & Checkout','keranjang dan checkout'],['Chat WhatsApp','tombol WhatsApp'],['Rekomendasi AI','pilihkan fitur sesuai kebutuhan']];
+      if(/Halaman apa saja/i.test(t))return [['Pilihkan Otomatis','pilihkan halaman yang cocok untuk jenis website ini'],['5 Halaman','Beranda, Tentang, Produk, FAQ, Kontak'],['10 Halaman','pilihkan 10 halaman yang cocok']];
+      if(/Kontak, alamat/i.test(t))return [['Belum Ada','belum ada']];
+      if(/tujuan utama/i.test(t))return [['Jual Produk','menjual produk kepada calon pelanggan'],['Promosi Bisnis','memperkenalkan bisnis dan layanan'],['Portofolio','menampilkan karya dan proyek']];
+    }
+    return [];
+  }
+  function renderQuick(){
+    var state=window.HERMES_OFFICE_STATE;
+    var agent=window.S&&window.S.agent;
+    var input=agent&&document.getElementById('chat-in-'+agent);
+    var old=document.getElementById('flystudio-quick-actions');
+    if(!input||!state){if(old)old.remove();return}
+    var opts=optionsFor(state,agent);
+    var cps=state.checkpoints||{};
+    if(cps.checkpoint1&&cps.checkpoint1.status==='pending')opts=[['Pilih Konsep 1','pilih 1'],['Pilih Konsep 2','pilih 2'],['Pilih Konsep 3','pilih 3']];
+    if(cps.checkpoint2&&cps.checkpoint2.status==='pending')opts=[['Setujui Desain','setuju'],['Minta Revisi','revisi desain']];
+    if(cps.checkpoint3&&cps.checkpoint3.status==='pending')opts=[['Setujui Website','setuju'],['Minta Revisi','revisi website']];
+    if(!opts.length){if(old)old.remove();return}
+    var key=agent+':'+opts.map(function(o){return o[1]}).join('|');
+    if(old&&lastQuick===key)return;
+    if(old)old.remove();
+    lastQuick=key;
+    var bar=document.createElement('div');bar.id='flystudio-quick-actions';
+    opts.forEach(function(o,i){
+      var b=document.createElement('button');b.textContent=o[0];if(i===0)b.className='primary';
+      b.onclick=function(){send(agent,o[1])};bar.appendChild(b);
+    });
+    input.parentElement.insertAdjacentElement('beforebegin',bar);
+  }
+  var previous={};
+  setInterval(function(){
+    renderQuick();
+    var st=window.HERMES_OFFICE_STATE;
+    if(!st||!st.checkpoints)return;
+    [1,2,3].forEach(function(n){
+      var cp=st.checkpoints['checkpoint'+n];
+      var status=cp&&cp.status;
+      if(previous[n]&&previous[n]!==status&&status==='pending'){
+        toast(n===1?'Bagas menunggu pilihan konsep.':n===2?'Desain siap. Dimas menunggu persetujuan.':'Website sudah jadi! Adam menunggu review.','Buka Karyawan',function(){
+          var slug=n===1?'bagas':n===2?'dimas':'adam';
+          if(typeof window.selectAgent==='function')window.selectAgent(slug);
+        });
+      }
+      previous[n]=status;
+    });
+  },900);
+})();
+</script>
 </body>
 </html>
