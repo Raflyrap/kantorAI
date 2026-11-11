@@ -12,7 +12,7 @@
 <button class="hotspot" style="left:36%;top:77%" data-room="Frontend & Growth">Frontend & Growth</button>
 <button class="hotspot" style="left:64%;top:84%" data-room="Lounge">Lounge</button></div></div>
 <aside><section class="panel"><h2>Visualisasi agen</h2><label class="switch"><input type="checkbox" id="agents-toggle" checked> Tampilkan agen</label><p><label class="switch">Mode tampilan <select id="agent-style" style="background:#34254c;color:white;border:1px solid #75549d;padding:6px;border-radius:6px"><option value="sprite">Avatar chibi 2D</option><option value="marker">Indikator status</option></select></label></p><p class="info">Avatar chibi merupakan layer terpisah yang dapat bergerak dan duduk. Gambar dasar masih memuat karakter lama sehingga sementara bisa terlihat ganda.</p></section><section class="panel"><h2 id="room-title">Pilih ruangan</h2><div id="room-desc" class="info">Klik label ruangan pada ilustrasi untuk melihat fungsi dan anggota timnya.</div></section><section class="panel"><h2>Tim AI · Status asli</h2><div id="team" class="info">Mengambil data backend…</div></section><section class="panel"><h2>Proyek berjalan</h2><div id="project" class="info">Menunggu data proyek…</div><p><a href="/">Buka workflow dan checkpoint →</a></p></section></aside></div>
-<div class="below">Preview interaktif tahap lanjut: sembilan avatar chibi 2D terpisah dari gambar bergerak antar titik aktivitas, berganti pose duduk dan mengetik sesuai status backend. Ilustrasi dasar masih memuat karakter lama; jalur antar-ruang sekarang memakai titik koridor yang ditentukan manual, belum collision otomatis terhadap seluruh furnitur. Workflow AI, checkpoint, dan ekspor tetap berada di kantor interaktif lama.</div>
+<div class="below">Preview interaktif tahap lanjut: sembilan avatar chibi 2D terpisah dari gambar bergerak antar titik aktivitas, berganti pose duduk dan mengetik sesuai status backend. Ilustrasi dasar masih memuat karakter lama; rute diulang dari posisi aktual saat tujuan berubah, dan agen berjalan bergantian agar tidak semuanya menumpuk di lounge. Jalur masih manual dan belum menjamin bebas tabrakan furnitur. Workflow AI, checkpoint, dan ekspor tetap berada di kantor interaktif lama.</div>
 <script>
 const rooms={
 'Riset & Ide':'Raka (Project Manager), Rina (Research), dan Bagas (Creative Director) mengembangkan arah proyek.',
@@ -72,20 +72,29 @@ function routeNodes(from,to){
  const path=[];for(let n=to;n!==from;n=prev[n])path.unshift(n);
  return path;
 }
-function movePin(slug,target,walking,kind){
- const motion=agentMotion[slug]||(agentMotion[slug]={point:stations[slug].slice(),room:agentRooms[slug],path:[],destination:''});
- const room=kind==='working'?agentRooms[slug]:kind==='waiting'?'meeting':walking?'lounge':agentRooms[slug];
- if(room!==motion.destination){
-   motion.destination=room;
-   const via=routeNodes(motion.room,room).map(name=>corridor[name].slice());
-   motion.path=[...via,target.slice()];
-   motion.room=room;
+function nearestCorridor(point){
+ let best='central',distance=Infinity;
+ for(const [name,p] of Object.entries(corridor)){
+  const d=Math.hypot((p[0]-point[0])*1.78,p[1]-point[1]);
+  if(d<distance){best=name;distance=d}
  }
- const pin=agentPins[slug],sprite=spriteAgents[slug];
+ return best;
+}
+function movePin(slug,target,walking,kind){
+ const motion=agentMotion[slug]||(agentMotion[slug]={point:stations[slug].slice(),path:[],destination:''});
+ const room=kind==='working'?agentRooms[slug]:kind==='waiting'?'meeting':walking?'lounge':agentRooms[slug];
+ const goal=room+':'+target.map(v=>v.toFixed(2)).join(',');
+ if(goal!==motion.destination){
+  motion.destination=goal;
+  // Replan from current position rather than from a room the agent has not reached.
+  const start=nearestCorridor(motion.point);
+  const via=routeNodes(start,room).map(name=>corridor[name].slice());
+  motion.path=[corridor[start].slice(),...via,target.slice()].filter((p,i,arr)=>i===0||Math.hypot(p[0]-arr[i-1][0],p[1]-arr[i-1][1])>.01);
+ }
  const inMotion=motion.path.length>0;
- for(const el of [pin,sprite])el.classList.toggle('walking',inMotion);
- sprite.classList.toggle('typing',!inMotion&&kind==='working');
- sprite.classList.toggle('sitting',!inMotion);
+ for(const el of [agentPins[slug],spriteAgents[slug]])el.classList.toggle('walking',inMotion);
+ spriteAgents[slug].classList.toggle('typing',!inMotion&&kind==='working');
+ spriteAgents[slug].classList.toggle('sitting',!inMotion);
 }
 function animateAgentRoutes(now){
  const dt=Math.min((now-(animateAgentRoutes.last||now))/1000,.06);animateAgentRoutes.last=now;
@@ -94,7 +103,7 @@ function animateAgentRoutes(now){
   const next=motion.path[0];
   if(next){
    const dx=next[0]-motion.point[0],dy=next[1]-motion.point[1],dist=Math.hypot(dx,dy);
-   const speed=10*dt;
+   const speed=9*dt;
    if(dist<=speed){motion.point=next;motion.path.shift()}
    else motion.point=[motion.point[0]+dx/dist*speed,motion.point[1]+dy/dist*speed];
   }
@@ -106,7 +115,7 @@ function animateAgentRoutes(now){
 }
 requestAnimationFrame(animateAgentRoutes);
 document.getElementById('agents-toggle').addEventListener('change',refreshAgentStyle);refreshAgentStyle();
-function updateAgents(){walkTick++;for(const slug of names){const pin=agentPins[slug],kind=classify(lastStatuses[slug]);pin.classList.toggle('working',kind==='working');pin.classList.toggle('waiting',kind==='waiting');pin.querySelector('.agent-status').textContent=kind==='working'?'Bekerja':kind==='waiting'?'Menunggu':'Standby';const destination=kind==='working'?stations[slug]:kind==='waiting'?meeting:(walkTick%4===0?lounge:stations[slug]);movePin(slug,destination,kind!=='working'&&walkTick%4===0,kind)}}
+function updateAgents(){walkTick++;for(const slug of names){const pin=agentPins[slug],kind=classify(lastStatuses[slug]);pin.classList.toggle('working',kind==='working');pin.classList.toggle('waiting',kind==='waiting');pin.querySelector('.agent-status').textContent=kind==='working'?'Bekerja':kind==='waiting'?'Menunggu':'Standby';const patrol=kind==='idle'&&((walkTick+names.indexOf(slug)*2)%9===0);const base=kind==='working'?stations[slug]:kind==='waiting'?meeting:patrol?lounge:stations[slug];const offset=kind==='waiting'||patrol?[(names.indexOf(slug)%3-1)*2.3,(Math.floor(names.indexOf(slug)/3)-1)*2.1]:[0,0];const destination=[base[0]+offset[0],base[1]+offset[1]];movePin(slug,destination,patrol,kind)}}
 async function poll(){try{const response=await fetch('/api/status',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);const data=await response.json();if(!data.success||!data.state)throw Error('Format status tidak sesuai');const state=data.state;document.getElementById('live').textContent='● Backend online';document.getElementById('project').textContent='Tahap '+(state.currentStage??0)+' · '+(state.topic||'Belum ada proyek aktif');lastStatuses=Object.fromEntries(names.map(slug=>[slug,state.employees?.[slug]?.status||'standby']));updateAgents();const container=document.getElementById('team');container.replaceChildren();for(const slug of names){const row=document.createElement('div');row.className='employee';const name=document.createElement('strong');name.textContent=data.employeesConfig?.[slug]?.nama||slug[0].toUpperCase()+slug.slice(1);const status=document.createElement('span');status.textContent=state.employees?.[slug]?.status||'standby';row.append(name,status);container.append(row)}}catch(e){document.getElementById('live').textContent='○ Backend tidak terhubung';document.getElementById('team').textContent='Tidak dapat memuat status: '+e.message}}
 poll();setInterval(()=>{if(!document.hidden)poll()},5000);setInterval(()=>{if(!document.hidden&&Object.keys(lastStatuses).length)updateAgents()},7000);
 </script></body></html>
