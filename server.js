@@ -131,7 +131,7 @@ function buildProjectPage(brief, page, pages, pageText) {
 
 // Meeting-first discovery: collect a real group brief before running any stage.
 const meetingBrief = { messages: [], turn: 0, pending: false };
-const meetingTeam = ['rina','bagas','sari','luna','dimas','kevin','nadia','adam'];
+const meetingTeam = ['raka','rina','bagas','sari','luna','dimas','kevin','nadia','adam'];
 function meetingTopic(messages) {
   const joined = messages.filter(m => m.role === 'user').map(m => m.text).join(' ').toLowerCase();
   if (/toko|store|shop|jualan|ecommerce|e-commerce/.test(joined)) return 'toko online';
@@ -1317,19 +1317,26 @@ const server = http.createServer(async (req, res) => {
       try {
         const teamSlug = meetingTeam[meetingBrief.turn % meetingTeam.length];
         const topic = meetingTopic(meetingBrief.messages);
-        const conversation = meetingBrief.messages.slice(-16).map(m => m.sender+': '+m.text).join('\\n');
-        const prompt = 'Kamu sedang rapat tim untuk website. Balas singkat maksimal 2 kalimat, relevan dengan diskusi. Jangan ulang pertanyaan yang sudah dijawab. Jenis website yang sudah diketahui: '+(topic||'belum jelas')+'. Riwayat rapat:\\n'+conversation+'\\nBerikan satu saran spesifik dari peranmu.';
-        let teammate = '';
-        try { teammate = (await callAgent(EMPLOYEES_CONFIG[teamSlug],prompt,officeState.currentProjectId)).text.slice(0,450); }
-        catch(e) { teammate='Saya catat kebutuhan ini. Pastikan fitur dan desain sesuai tujuan website.'; }
-        const q = meetingFallbackQuestion();
-        let raka = q;
+        const conversation = meetingBrief.messages.slice(-22).map(m => m.sender+': '+m.text).join('\\n');
+        const fallback = teamSlug === 'raka' ? meetingFallbackQuestion() : 'Menurut saya, kebutuhan ini perlu dipastikan sebelum mulai. Apakah ada detail yang ingin Bos tambahkan?';
+        const prompt = [
+          'Kamu adalah '+EMPLOYEES_CONFIG[teamSlug].nama+' yang sedang rapat tim website dengan klien.',
+          'HANYA KAMU yang berbicara pada giliran ini. Jangan menulis jawaban karyawan lain.',
+          'Balas maksimal 2 kalimat dan 65 kata. Utamakan SATU pertanyaan spesifik yang sesuai keahlianmu; boleh memberi saran singkat.',
+          'Pahami jawaban singkat pengguna sebagai jawaban untuk pertanyaan terakhir di percakapan. Jangan ulangi pertanyaan yang sudah dijawab.',
+          'Jenis website yang sudah diketahui: '+(topic||'belum jelas')+'. Jika toko online sudah jelas, JANGAN tanya lagi jenis website.',
+          'Jangan mengklaim garansi resmi, produk asli, atau pembayaran berhasil tanpa bukti.',
+          'Rapat hanya untuk mengumpulkan brief. Jangan memulai coding sebelum rapat ditutup.',
+          'Riwayat rapat:', conversation
+        ].join('\\n');
+        let answer = fallback;
         try {
-          const ai = await callAgent(EMPLOYEES_CONFIG.raka,'Kamu PM rapat. Jenis website sudah diketahui: '+(topic||'belum jelas')+'. Riwayat:\\n'+conversation+'\\nBerikan SATU pertanyaan klarifikasi berikutnya, singkat dan tidak mengulang informasi yang sudah jelas. Jika pengguna baru menyebut jenis website, tanyakan detail website jenis itu. Jangan mulai eksekusi sebelum rapat ditutup.',officeState.currentProjectId);
-          if (ai.text.trim().length < 250 && ai.text.trim().length > 8) raka=ai.text.trim();
-        } catch(e) {}
-        const replies = [{sender:EMPLOYEES_CONFIG[teamSlug].nama,role:'assistant',text:teammate},{sender:'Raka',role:'assistant',text:raka}];
-        for(const r of replies){meetingBrief.messages.push({role:'assistant',sender:r.sender,text:r.text});recordDialog(r.sender.toLowerCase(),'rafly',r.text,0);}
+          const ai = await callAgent(EMPLOYEES_CONFIG[teamSlug], prompt, officeState.currentProjectId);
+          if (ai.text && ai.text.trim()) answer = ai.text.trim().slice(0,500);
+        } catch(e) { console.warn('[Meeting] AI '+teamSlug+' fallback:',e.message); }
+        const replies = [{sender:EMPLOYEES_CONFIG[teamSlug].nama,role:'assistant',text:answer}];
+        meetingBrief.messages.push({role:'assistant',sender:replies[0].sender,text:answer});
+        recordDialog(teamSlug,'rafly',answer,0);
         meetingBrief.turn++;
         res.writeHead(200, {'Content-Type':'application/json'});
         res.end(JSON.stringify({success:true,replies}));
