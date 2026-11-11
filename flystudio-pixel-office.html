@@ -4,7 +4,7 @@
 :root{color-scheme:dark;--bg:#151126;--panel:#211a38;--line:#66518d;--text:#f7f1ff;--muted:#b4a4d2;--purple:#ad72ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 25%,#302046,#151126 75%);color:var(--text);font:14px system-ui,Arial,sans-serif}button{font:inherit;color:inherit;cursor:pointer}header{height:82px;display:flex;align-items:center;justify-content:space-between;padding:16px 24px}.brand{display:flex;align-items:center;gap:12px}.logo{font-size:27px;font-weight:900;background:#6036a4;border:2px solid #b78aff;padding:4px 13px;box-shadow:4px 4px 0 #382054}.brand strong{font-size:29px;letter-spacing:-1px}.brand small{display:block;color:#bba1e9;font-size:13px}.tag{border:1px solid #6c548e;border-radius:12px;background:#221936;padding:10px 15px}.layout{display:grid;grid-template-columns:190px minmax(0,1fr) 255px;gap:14px;padding:0 14px 16px;min-height:calc(100vh - 82px)}.panel{border:1px solid #5e4780;background:#1d1731e8;border-radius:14px;padding:13px;box-shadow:0 8px 22px #0a071a55}nav{display:flex;flex-direction:column;gap:8px}nav button,.action{background:#2b2047;border:1px solid #6e528e;border-radius:9px;text-align:left;padding:11px 13px}nav button.active,nav button:hover,.action:hover{background:#57358c}nav h3,.panel h3{margin:5px 0 12px}.side-note{color:var(--muted);font-size:12px;line-height:1.6;margin-top:18px}.stage{position:relative;min-height:550px;overflow:hidden;border-radius:16px;border:1px solid #44345e;background:radial-gradient(circle at 45% 40%,#312548,#1a142c 72%)}#office{display:block;width:100%;height:100%;min-height:550px;image-rendering:pixelated;cursor:grab}#office:active{cursor:grabbing}.stage-head{position:absolute;top:14px;left:15px;pointer-events:none;background:#19142ddf;border:1px solid #705393;border-radius:10px;padding:10px 14px}.stage-head b{display:block;font-size:16px}.stage-head small{color:#b5a0d7}.toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:#1b1536eb;border:1px solid #725296;border-radius:12px;padding:8px}.toolbar button{background:#4c3277;border:1px solid #8d62c7;border-radius:7px;padding:7px 11px}.right{display:flex;flex-direction:column;gap:13px}.progress{height:8px;background:#44335e;border-radius:9px;overflow:hidden;margin:7px 0 15px}.progress span{display:block;height:100%;background:linear-gradient(90deg,#7d50c4,#c79bff)}.item{display:flex;justify-content:space-between;gap:8px;font-size:12px}.empty{color:#c0afd6;line-height:1.6}.chip{font-size:11px;background:#3c2b5b;border:1px solid #8060a8;border-radius:20px;padding:4px 8px}.footer{margin-top:auto;font-size:12px;color:#bdaed4}#hint{position:absolute;right:14px;bottom:78px;background:#1d1539e8;border:1px solid #805caa;padding:9px 12px;border-radius:9px;font-size:12px;pointer-events:none}@media(max-width:1050px){.layout{grid-template-columns:160px minmax(0,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.stage{min-height:500px}}@media(max-width:650px){header{padding:12px;height:74px}.brand strong{font-size:21px}.tag{font-size:11px}.layout{display:block;padding:0 8px}.layout>nav{display:flex;flex-direction:row;overflow:auto;margin-bottom:8px}.layout>nav button{white-space:nowrap}.stage{min-height:420px}#office{min-height:420px}.right{display:block}.right>.panel{margin:9px 0}.toolbar button{font-size:11px;padding:6px}.stage-head{font-size:11px}.side-note{display:none}}
 </style></head><body>
 <header><div class="brand"><div class="logo">F</div><div><strong>FlyStudio</strong><small>AI Website Agency · Pixel Edition</small></div></div><div class="tag">◉ Bos Rafly</div></header>
-<div class="layout"><nav class="panel"><h3>MENU</h3><button class="active">⌂ Kantor</button><button id="original">▤ Sistem AI Asli</button><button id="team">♙ Tim AI (9)</button><p class="side-note">Kantor pixel 2.5D dengan sembilan avatar manusia. Saat idle, avatar berjalan santai secara visual. Saat AI aktif, avatar kembali bekerja di meja. Tidak memakai kredit API.</p></nav>
+<div class="layout"><nav class="panel"><h3>MENU</h3><button class="active">⌂ Kantor</button><button id="original">▤ Sistem AI Asli</button><button id="team">♙ Tim AI (9)</button><p class="side-note">Kantor pixel 2.5D dengan sembilan avatar manusia. Avatar mengikuti jalur grid dan menghindari furnitur, dinding, serta pembatas. Gerakan visual tidak memakai kredit API.</p></nav>
 <main class="stage"><div class="stage-head"><b>🏢 Kantor FlyStudio</b><small>Isometric pixel office · 9 AI agents</small></div><canvas id="office" width="1100" height="780" aria-label="Peta kantor isometric pixel art dengan sembilan karyawan AI"></canvas><div id="hint">Geser untuk memindahkan tampilan · Scroll untuk zoom</div><div class="toolbar"><button id="minus">− Zoom</button><button id="reset">Reset</button><button id="plus">+ Zoom</button></div></main>
 <aside class="right"><section class="panel"><h3>▤ Proyek Aktif <span class="chip">Contoh proyek</span></h3><div class="item"><span>Landing Page Coffee Shop</span><b>65%</b></div><div class="progress"><span style="width:65%"></span></div><div class="item"><span>Website Jasa Design</span><b>40%</b></div><div class="progress"><span style="width:40%"></span></div><div class="item"><span>Landing Page Event</span><b>20%</b></div><div class="progress"><span style="width:20%;background:#f5b43f"></span></div><small class="empty" id="live-state">Menghubungkan backend AI…</small><div id="live-team" aria-live="polite"></div></section><section class="panel"><h3>◷ Aktivitas Tim</h3><p class="empty">9 posisi karyawan disiapkan. Tidak ada avatar pada map ini sesuai permintaan. Aktivitas AI asli tetap berada di halaman lama.</p><button class="action" id="open-ai">Buka Sistem AI →</button></section><div class="footer">FlyStudio · Pixel Office Prototype</div></aside></div>
 <script>
@@ -41,39 +41,88 @@ const WORK_OFFSETS={
  kevin:[-.4,.4],adam:[-.25,.5],nadia:[-.3,.5]
 };
 // Ambient movement is visual only; never starts an AI task or spends API credits.
-const AMBIENT_STOPS=[
- [[5.1,3.2],[6.2,4.4],[5.5,4.9]],
- [[3.1,3.5],[4.1,4.6],[3.7,5.4]],
- [[7.2,3.4],[8.1,4.4],[7.5,5.3]],
- [[2.3,8.4],[3.2,9.3],[4.0,9.0]],
- [[11.1,3.7],[10.1,4.8],[9.5,5.4]],
- [[4.4,8.4],[5.4,9.1],[5.9,10.0]],
- [[11.9,6.1],[10.8,7.0],[10.1,8.0]],
- [[2.1,12.4],[3.2,11.6],[4.1,11.2]],
- [[4.4,12.9],[5.4,12.0],[6.3,11.4]]
+// Grid pathfinding: furniture and walls are solid. All motion follows walkable cells.
+const GRID=.25,GRID_MAX=55;
+const SOLIDS=[
+ [2,1.4,3.75,2.55],[4.1,1.5,5.85,2.65],[6.2,1.6,7.95,2.75],
+ [1.1,6.4,2.85,7.55],[3.3,6.6,5.05,7.75],
+ [10.2,2.1,11.95,3.25],[12.1,4.4,13.85,5.55],
+ [1.2,10,2.95,11.15],[3.6,11,5.35,12.15],
+ [9.3,7,12.6,8.5],[7,11.5,9.2,12.45],[10.2,11.5,11.6,12.4],
+ [1.2,2.6,2.25,3.65],[4.7,12,5.75,13.05],
+ [0.65,.65,1.35,1.35],[7.05,.65,7.8,1.4],[.25,7.95,1,8.7],
+ [12.75,1.65,13.5,2.4],[12.7,7.65,13.45,8.4],
+ [.2,12.25,.95,13],[12.15,11.95,12.9,12.7],
+ // Divider posts and structural partitions
+ ...Array.from({length:7},(_,i)=>[i-.08,5.3,i+.25,5.68]),
+ ...Array.from({length:6},(_,i)=>[8.2,i-.08,8.55,i+.25]),
+ ...Array.from({length:8},(_,i)=>[i+5.9,8.9,i+6.25,9.23]),
+ ...Array.from({length:8},(_,i)=>[5.5,i+5.9,5.85,i+6.25])
+];
+function blocked(x,y){
+ if(x<.45||y<.45||x>13.55||y>13.55)return true;
+ return SOLIDS.some(([a,b,c,d])=>x>a-.13&&x<c+.13&&y>b-.13&&y<d+.13);
+}
+const key=(x,y)=>x+','+y;
+const toCell=(x,y)=>[Math.round(x/GRID),Math.round(y/GRID)];
+function nearestOpen(x,y){
+ const [cx,cy]=toCell(x,y);
+ if(!blocked(cx*GRID,cy*GRID))return [cx,cy];
+ for(let r=1;r<GRID_MAX;r++){
+  for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){
+   if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+   const a=cx+dx,b=cy+dy;
+   if(!blocked(a*GRID,b*GRID))return [a,b];
+  }
+ }
+ return [cx,cy];
+}
+function route(start,end){
+ const [sx,sy]=nearestOpen(start.x,start.y),[tx,ty]=nearestOpen(end.x,end.y);
+ const source=key(sx,sy),goal=key(tx,ty),open=[[sx,sy]],seen=new Set([source]),parents=new Map();
+ for(let head=0;head<open.length&&head<GRID_MAX*GRID_MAX;head++){
+  const [x,y]=open[head],k=key(x,y);
+  if(k===goal){
+   const result=[];let node=k;
+   while(node!==source){const [a,b]=node.split(',').map(Number);result.push({x:a*GRID,y:b*GRID});node=parents.get(node);if(!node)break}
+   result.reverse();return result;
+  }
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const a=x+dx,b=y+dy,n=key(a,b);
+   if(seen.has(n)||blocked(a*GRID,b*GRID))continue;
+   seen.add(n);parents.set(n,k);open.push([a,b]);
+  }
+ }
+ return [];
+}
+const PATROL=[
+ [[6.1,4.5],[6.7,4.8]],[[3.3,4.3],[4.2,4.7]],[[7.3,4.1],[7.7,4.7]],
+ [[2.7,8.6],[3.4,9.6]],[[10.7,5.4],[10.2,6.2]],[[4.5,8.7],[4.7,9.5]],
+ [[11.2,6.5],[10.5,6.6]],[[2.7,12.4],[3.4,12.8]],[[4.2,12.7],[4.7,13.2]]
 ];
 function staffTarget(slug,homeX,homeY,index){
- const status=modeFor(staffStatuses[slug]);
- if(status==='typing'||status==='sitting'){
-  const offset=WORK_OFFSETS[slug]||[0,0];
-  return {x:homeX+offset[0],y:homeY+offset[1]};
+ const mode=modeFor(staffStatuses[slug]);
+ if(mode==='typing'||mode==='sitting'){
+  const [ox,oy]=WORK_OFFSETS[slug]||[0,0];
+  return {x:homeX+ox,y:homeY+oy};
  }
- // In idle state, stagger short visual walks, then return to the desk.
- const cycle=480,phase=(frame+index*47)%cycle;
- const stops=AMBIENT_STOPS[index]||[[homeX,homeY]];
- const point=phase<90?stops[0]:phase<205?stops[1]:phase<310?stops[2]:stops[0];
+ const phase=(frame+index*53)%600,points=PATROL[index];
+ const point=phase<110?[homeX,homeY]:phase<280?points[0]:phase<430?points[1]:[homeX,homeY];
  return {x:point[0],y:point[1]};
 }
 function advanceStaff(){
  for(let i=0;i<STAFF.length;i++){
   const [slug,x,y]=STAFF[i],target=staffTarget(slug,x,y,i);
-  if(!staffMotion.has(slug))staffMotion.set(slug,{x,y});
-  const current=staffMotion.get(slug);
-  const dx=target.x-current.x,dy=target.y-current.y,dist=Math.hypot(dx,dy);
-  if(dist>.012){
-   const step=Math.min(.07,dist);
-   current.x+=dx/dist*step;current.y+=dy/dist*step;
-  }else{current.x=target.x;current.y=target.y}
+  if(!staffMotion.has(slug)){
+   const [a,b]=nearestOpen(x,y);
+   staffMotion.set(slug,{x:a*GRID,y:b*GRID,path:[],goal:''});
+  }
+  const pos=staffMotion.get(slug),[gx,gy]=nearestOpen(target.x,target.y),goal=key(gx,gy);
+  if(pos.goal!==goal){pos.goal=goal;pos.path=route(pos,{x:gx*GRID,y:gy*GRID})}
+  if(!pos.path.length)continue;
+  const next=pos.path[0],dx=next.x-pos.x,dy=next.y-pos.y,dist=Math.hypot(dx,dy);
+  if(dist<.065){pos.x=next.x;pos.y=next.y;pos.path.shift()}
+  else{const step=Math.min(.075,dist);pos.x+=dx/dist*step;pos.y+=dy/dist*step}
  }
 }
 function pixelHuman(slug,x,y,shirt,hair,skin,mode){
@@ -105,8 +154,7 @@ function drawStaff(){
  if(!staffVisible)return;
  const positions=STAFF.map(([slug,x,y,shirt,hair,skin],index)=>{
  const pos=staffMotion.get(slug)||{x,y};
- const target=staffTarget(slug,x,y,index);
- const moving=Math.hypot(target.x-pos.x,target.y-pos.y)>.025;
+ const moving=Boolean(pos.path?.length);
  return {slug,x:pos.x,y:pos.y,shirt,hair,skin,mode:moving?'walking':modeFor(staffStatuses[slug])};
  });
  positions.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
