@@ -2125,7 +2125,7 @@ function renderPanel(){
     if ((aKey === 's8_adam' || aKey === 'adam') && window.HERMES_OFFICE_STATE && window.HERMES_OFFICE_STATE.checkpoints && window.HERMES_OFFICE_STATE.checkpoints.checkpoint3 && (window.HERMES_OFFICE_STATE.checkpoints.checkpoint3.status === 'pending' || window.HERMES_OFFICE_STATE.checkpoints.checkpoint3.status === 'approved')) {
       var cp3State = window.HERMES_OFFICE_STATE.checkpoints.checkpoint3;
       var curP = window.HERMES_OFFICE_STATE.currentProjectId;
-      var pUrl = 'projects/' + curP + '/website/index.html';
+      var pUrl = 'http://localhost:3001/preview/' + encodeURIComponent(curP) + '/';
       var dUrl = 'http://localhost:3001/api/download-website?project=' + curP;
 
       h += '<div style="margin-bottom:12px;background:rgba(15,23,42,0.95);border:2px solid #6366f1;border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">';
@@ -2149,7 +2149,7 @@ function renderPanel(){
         // Pratinjau Website & Unduh ZIP di dalam chat bubble
         if(m.previewUrl || m.videoUrl){
           var curPid = (window.HERMES_OFFICE_STATE && window.HERMES_OFFICE_STATE.currentProjectId) || '';
-          var pUrl = curPid ? ('projects/' + curPid + '/website/index.html') : (m.previewUrl || m.videoUrl);
+          var pUrl = curPid ? ('http://localhost:3001/preview/' + encodeURIComponent(curPid) + '/') : (m.previewUrl || m.videoUrl);
           var dUrl = m.downloadUrl ? (m.downloadUrl.startsWith('http') ? m.downloadUrl : 'http://localhost:3001' + m.downloadUrl) : ('http://localhost:3001/api/download-website?project=' + curPid);
           h+='<div style="margin-top:10px;background:#030712;border-radius:14px;padding:12px;border:2px solid #6366f1;box-shadow:0 8px 24px rgba(0,0,0,0.6);">';
           h+='<div style="font-size:0.75rem;font-weight:700;color:#818cf8;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span>Hasil Website Siap Ditinjau (Adam)</span></div>';
@@ -3318,7 +3318,7 @@ function renderWorkflowAndCheckpoints() {
     h += '<span class="cp-pill" style="background:' + (isApp ? 'rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.3);' : 'rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3);') + '">' + (isApp ? 'Website Siap Rilis' : 'Evaluasi Bos') + '</span>';
     h += '</div>';
 
-    var pUrl = 'projects/' + curPid + '/website/index.html';
+    var pUrl = 'http://localhost:3001/preview/' + encodeURIComponent(curPid) + '/';
     var dUrl = 'http://localhost:3001/api/download-website?project=' + curPid;
 
     h += '<div style="background:rgba(30,41,59,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;margin:8px 0;">';
@@ -3472,7 +3472,7 @@ window.openWebsitePreview = function(rawUrl) {
 
   var finalUrl = rawUrl;
   if (!finalUrl.startsWith('http')) {
-    finalUrl = 'http://localhost/kantor-kreatif/' + finalUrl.replace(/^\/+/, '');
+    finalUrl = new URL(finalUrl, 'http://localhost:3001/').href;
   }
   document.getElementById('preview-iframe').src = finalUrl;
   document.getElementById('preview-tab-link').href = finalUrl;
