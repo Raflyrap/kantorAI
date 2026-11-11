@@ -2340,6 +2340,7 @@ function syncUi(){
 }
 function focusRoom(id){S.room=id;S.agent=null;syncUi();if(scene3d){scene3d.focus(id);}}
 function selectAgent(id){S.agent=id;var st=C.staff.filter(function(s){return s.id===id;})[0];if(st&&S.room!==st.ruang){S.room=st.ruang;if(scene3d){scene3d.focus(st.ruang);}}syncUi();}
+window.selectAgent = selectAgent;
 function applyHeader(){
   var titleEl = $('#title');
   if(titleEl) titleEl.textContent=C?C.studio:'FlyStudio';
@@ -3587,8 +3588,8 @@ if(window.claude&&window.claude.use){
   }
   function renderQuick(){
     var state=window.HERMES_OFFICE_STATE;
-    var agent=window.S&&window.S.agent;
-    var input=agent&&document.getElementById('chat-in-'+agent);
+    var input=document.querySelector('[id^="chat-in-"]');
+    var agent=input?input.id.replace('chat-in-',''):null;
     var old=document.getElementById('flystudio-quick-actions');
     if(!input||!state){if(old)old.remove();return}
     var opts=optionsFor(state,agent);
