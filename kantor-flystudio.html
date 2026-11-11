@@ -2107,6 +2107,9 @@ function renderPanel(){
     h+='<div class="who">'+ava(st)+'<div><h2>'+esc(st.nama)+'</h2><p class="soft">'+esc(r.label)+'</p></div></div>';
     h+='<div><h3>Tugas Karyawan</h3><ul class="tasks">'+(r.tugas||[]).map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul></div>';
 
+    var cpState = window.HERMES_OFFICE_STATE && window.HERMES_OFFICE_STATE.checkpoints;
+    var needsResponse = cpState && ((aKey.indexOf('bagas')!==-1 && cpState.checkpoint1.status==='pending') || (aKey.indexOf('dimas')!==-1 && cpState.checkpoint2.status==='pending') || (aKey.indexOf('adam')!==-1 && cpState.checkpoint3.status==='pending'));
+    if (needsResponse) {
     // Kotak Chat Langsung dengan Agent
     h+='<div class="meet-chat-box-pro" style="margin-top:8px;">';
     h+='<div class="meet-chat-header-pro"><div class="meet-chat-target"><div class="sc-avatar-circle" style="width:30px;height:30px;font-size:0.75rem;background:'+st.warna+';">'+esc(st.nama.substring(0,2).toUpperCase())+'</div><div><div class="meet-target-name">Chat Langsung: '+esc(st.nama)+'</div><div class="meet-target-sub"><span class="meet-target-model">'+esc(activeModel)+'</span></div></div></div></div>';
@@ -2168,6 +2171,7 @@ function renderPanel(){
     h+='<input type="text" id="chat-in-'+aKey+'" class="meet-chat-input" placeholder="Ketik pesan untuk '+esc(st.nama)+'..." onkeydown="if(event.key===\'Enter\'){sendAgentChat(\''+aKey+'\');}">';
     h+='<button type="button" class="meet-chat-send" onclick="sendAgentChat(\''+aKey+'\')">Kirim <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>';
     h+='</div></div>';
+    }
 
   }else if(S.room==='meet'){
     // Safeguard C.staff
@@ -2190,6 +2194,13 @@ function renderPanel(){
     h += '</button>';
     h += '</div>';
     h += '</div>';
+
+    if (MEET.active) {
+      h += '<div class="fly-meeting-group"><div style="font-weight:800;margin-bottom:10px;">Diskusi Grup • 9 Karyawan AI</div>';
+      h += '<div id="group-chat-messages" style="height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:12px;background:#171526;border:1px solid #ffffff22;border-radius:12px;">';
+      h += window.GROUP_CHAT_LOG.map(function(m){return '<div style="padding:10px;border-radius:9px;background:'+(m.role==='user'?'#46346c':'#29243e')+'"><strong>'+esc(m.sender)+'</strong><div style="white-space:pre-wrap;font-size:0.85rem;">'+esc(m.text)+'</div></div>';}).join('');
+      h += '</div><div style="display:flex;gap:8px;margin-top:10px;"><input id="group-chat-input" placeholder="Tulis kebutuhan atau tanggapan untuk tim..." style="flex:1;min-width:0;background:#211e33;border:1px solid #ffffff33;border-radius:10px;color:white;padding:12px;" onkeydown="if(event.key===\'Enter\')sendGroupMeetingChat()"><button type="button" class="btn-meeting-all" onclick="sendGroupMeetingChat()">Kirim</button></div></div>';
+    }
 
     // Checkpoint Card (Jika ada checkpoint aktif / hasil proyek)
     h += renderWorkflowAndCheckpoints();
@@ -3349,36 +3360,26 @@ function renderWorkflowAndCheckpoints() {
 }
 
 
-window.toggleMeetingAll = function() {
-  MEET.active = !MEET.active;
-  
-  // Beritahu Node.js engine agar mematikan aksi santai / ngopi saat rapat
+window.toggleMeetingAll = async function() {
+  var next = !MEET.active;
   try {
-    fetch('http://localhost:3001/api/toggle-meeting', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: MEET.active })
-    }).catch(function(){});
-  } catch(e) {}
-
-  if (scene3d) {
-    scene3d.sync();
-  }
-  if (MEET.active) {
-    focusRoom('meet');
-    triggerSFX('whoosh');
-    if (!window.GROUP_CHAT_LOG.length) {
-      window.GROUP_CHAT_LOG.push({
-        sender: 'Raka (Creative Director)',
-        role: 'assistant',
-        color: '#6366F1',
-        text: 'Seluruh tim sudah kumpul di meja rapat, Bos Rafly. Silakan berikan arahan atau brief kontennya!'
-      });
+    var res = await fetch('http://localhost:3001/api/toggle-meeting', {
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:next})
+    });
+    var data = await res.json();
+    if(!data.success){alert(data.error||'Gagal mengubah status rapat');return}
+    MEET.active=next;
+    if(scene3d)scene3d.sync();
+    if(next){
+      focusRoom('meet');
+      triggerSFX('whoosh');
+      window.GROUP_CHAT_LOG=[{sender:'Raka',role:'assistant',text:'Rapat dimulai, Bos. Ceritakan website yang ingin dibuat. Tim akan bergantian berdiskusi sebelum eksekusi.'}];
+    }else{
+      focusRoom('all');
+      if(data.started)alert('Rapat selesai. Tim mulai membangun website berdasarkan hasil diskusi.');
     }
-  } else {
-    focusRoom('all');
-  }
-  renderPanel();
+    renderPanel();
+  }catch(e){alert('Server rapat tidak merespons: '+e.message)}
 };
 
 window.sendGroupMeetingChat = async function() {
@@ -3417,6 +3418,7 @@ window.sendGroupMeetingChat = async function() {
     var data = await res.json();
     window.GROUP_CHAT_LOG = window.GROUP_CHAT_LOG.filter(function(m){ return !m.isTyping; });
 
+    if (!data.success) { alert(data.error || 'Rapat gagal diproses'); renderPanel(); return; }
     if (data.success && data.replies && data.replies.length) {
       data.replies.forEach(function(rep){
         window.GROUP_CHAT_LOG.push(rep);
@@ -3431,13 +3433,13 @@ window.sendGroupMeetingChat = async function() {
     console.warn('Group chat error:', err.message);
   }
 
-  // Fallback respons
+  // Kegagalan jaringan tidak dianggap sebagai persetujuan rapat.
   window.GROUP_CHAT_LOG = window.GROUP_CHAT_LOG.filter(function(m){ return !m.isTyping; });
   window.GROUP_CHAT_LOG.push({
     sender: 'Raka (Creative Director)',
     role: 'assistant',
     color: '#6366F1',
-    text: 'Siap Bos Rafly, arahan "' + text + '" sudah dicatat oleh seluruh tim!'
+    text: 'Pesan belum berhasil diproses server. Silakan coba lagi.'
   });
   renderPanel();
 };
