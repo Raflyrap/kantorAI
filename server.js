@@ -558,7 +558,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
         ].join('\\n\\n');
         const ai = await callAgent(adamConf, prompt, pId, { maxTokens: 7500 });
         generatedHtml = ai.text.replace(/^\\s*```(?:html)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();
-        if (!/<!doctype html|<html[\\s>]/i.test(generatedHtml) || !/<\\/html>/i.test(generatedHtml)) {
+        if (!/<!doctype html|<html[\\s>]/i.test(generatedHtml) || !generatedHtml.toLowerCase().includes('</html>')) {
           throw new Error('HTML output incomplete');
         }
         // Prevent cross-project links; all generated files are local.
