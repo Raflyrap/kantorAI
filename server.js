@@ -530,6 +530,8 @@ async function advanceFromCheckpoint1(selectedConceptId = 1, customFeedback = ''
 async function advanceFromCheckpoint2(approved = true, notes = '') {
   const pId = officeState.currentProjectId;
   const cp2 = officeState.checkpoints.checkpoint2;
+  const approvedBrief = officeState.approvedBrief || null;
+  const projDir = path.join(PROJECTS_DIR, pId);
   cp2.status = 'approved';
   cp2.approved = true;
   officeState.waitingForAdvice = null;
@@ -561,6 +563,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
   // Multi-page output based on the approved requirements, not a generic landing page.
   if (approvedBrief) {
     const pages = pagesFromBrief(approvedBrief);
+    console.log('[Adam] Generating ' + pages.length + ' approved pages with OpenRouter.');
     // Ask the coding model to create each complete page, with links to all approved pages.
     // A deterministic fallback is used only when the AI response is unusable.
     for (const page of pages) {
@@ -594,6 +597,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
         generatedHtml = buildProjectPage(approvedBrief, page, pages, approvedBrief.content);
       }
       fs.writeFileSync(path.join(webDir, page.file), generatedHtml, 'utf8');
+      console.log('[Adam] Page ready: ' + page.file);
     }
     fs.writeFileSync(path.join(projDir, 'approved-brief.json'), JSON.stringify(approvedBrief, null, 2));
     recordDialog('adam', 'dimas', 'Website multi-halaman selesai: ' + pages.map(p => p.file).join(', ') + '. Semua navigasi menggunakan href lokal.', 5);
