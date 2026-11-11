@@ -537,17 +537,39 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
   // Multi-page output based on the approved requirements, not a generic landing page.
   if (approvedBrief) {
     const pages = pagesFromBrief(approvedBrief);
-    let pageCopy = {};
-    try {
-      const adamConf = EMPLOYEES_CONFIG.adam;
-      const prompt = 'Buat konten berbeda untuk setiap halaman website sesuai brief. Jangan mengarang fakta, testimoni, harga, alamat, atau kontak. Balas JSON object murni dengan key nama file dan value teks isi halaman. Brief: ' + JSON.stringify(approvedBrief) + '. Halaman: ' + JSON.stringify(pages);
-      const ai = await callAgent(adamConf, prompt, pId);
-      const match = ai.text.match(/\\{[\\s\\S]*\\}/);
-      if (match) pageCopy = JSON.parse(match[0]);
-    } catch (err) { console.warn('[Adam] Konten halaman fallback ke brief:', err.message); }
+    // Ask the coding model to create each complete page, with links to all approved pages.
+    // A deterministic fallback is used only when the AI response is unusable.
     for (const page of pages) {
-      const text = typeof pageCopy[page.file] === 'string' ? pageCopy[page.file] : approvedBrief.content;
-      fs.writeFileSync(path.join(webDir, page.file), buildProjectPage(approvedBrief, page, pages, text), 'utf8');
+      let generatedHtml = '';
+      try {
+        const adamConf = EMPLOYEES_CONFIG.adam;
+        const prompt = [
+          'Kamu adalah senior web engineer. Tulis SATU file HTML5 LENGKAP dan siap dibuka untuk halaman yang ditentukan.',
+          'Jangan balas markdown, penjelasan, atau code fence. Balas hanya <!doctype html> ... </html>.',
+          'Bangun UI/UX sesuai preferensi desain klien, bukan template generik. Buat desain responsif, navigasi aktif, aksesibilitas, CSS dan JavaScript yang benar-benar diperlukan.',
+          'Seluruh link navigasi wajib menggunakan href relatif sesuai daftar halaman. Jangan membuat tautan ke halaman yang tidak ada.',
+          'Konten wajib spesifik pada bisnis dan jenis website. Jangan mengarang testimoni, alamat, nomor, harga, sertifikasi, atau fakta perusahaan.',
+          'Jika fitur membutuhkan backend, jelaskan di antarmuka bahwa fitur itu belum aktif; jangan berpura-pura transaksi atau login berhasil.',
+          'Brief final: ' + JSON.stringify(approvedBrief),
+          'Halaman yang dibuat sekarang: ' + JSON.stringify(page),
+          'Daftar file halaman dan navigasi: ' + JSON.stringify(pages),
+          'Design system dari Luna: ' + JSON.stringify(ds).slice(0, 6000),
+          'Copywriting dari Sari: ' + JSON.stringify(copyData).slice(0, 6000)
+        ].join('\\n\\n');
+        const ai = await callAgent(adamConf, prompt, pId, { maxTokens: 7500 });
+        generatedHtml = ai.text.replace(/^\\s*```(?:html)?\\s*/i, '').replace(/\\s*```\\s*$/, '').trim();
+        if (!/<!doctype html|<html[\\s>]/i.test(generatedHtml) || !/<\\/html>/i.test(generatedHtml)) {
+          throw new Error('HTML output incomplete');
+        }
+        // Prevent cross-project links; all generated files are local.
+        for (const linked of pages) {
+          if (!generatedHtml.includes(linked.file)) throw new Error('Missing navigation link to ' + linked.file);
+        }
+      } catch (err) {
+        console.warn('[Adam] AI generation fallback for ' + page.file + ': ' + err.message);
+        generatedHtml = buildProjectPage(approvedBrief, page, pages, approvedBrief.content);
+      }
+      fs.writeFileSync(path.join(webDir, page.file), generatedHtml, 'utf8');
     }
     fs.writeFileSync(path.join(projDir, 'approved-brief.json'), JSON.stringify(approvedBrief, null, 2));
     recordDialog('adam', 'dimas', 'Website multi-halaman selesai: ' + pages.map(p => p.file).join(', ') + '. Semua navigasi menggunakan href lokal.', 5);
