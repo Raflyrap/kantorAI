@@ -4,8 +4,8 @@
 :root{color-scheme:dark;--bg:#151126;--panel:#211a38;--line:#66518d;--text:#f7f1ff;--muted:#b4a4d2;--purple:#ad72ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 25%,#302046,#151126 75%);color:var(--text);font:14px system-ui,Arial,sans-serif}button{font:inherit;color:inherit;cursor:pointer}header{height:82px;display:flex;align-items:center;justify-content:space-between;padding:16px 24px}.brand{display:flex;align-items:center;gap:12px}.logo{font-size:27px;font-weight:900;background:#6036a4;border:2px solid #b78aff;padding:4px 13px;box-shadow:4px 4px 0 #382054}.brand strong{font-size:29px;letter-spacing:-1px}.brand small{display:block;color:#bba1e9;font-size:13px}.tag{border:1px solid #6c548e;border-radius:12px;background:#221936;padding:10px 15px}.layout{display:grid;grid-template-columns:190px minmax(0,1fr) 255px;gap:14px;padding:0 14px 16px;min-height:calc(100vh - 82px)}.panel{border:1px solid #5e4780;background:#1d1731e8;border-radius:14px;padding:13px;box-shadow:0 8px 22px #0a071a55}nav{display:flex;flex-direction:column;gap:8px}nav button,.action{background:#2b2047;border:1px solid #6e528e;border-radius:9px;text-align:left;padding:11px 13px}nav button.active,nav button:hover,.action:hover{background:#57358c}nav h3,.panel h3{margin:5px 0 12px}.side-note{color:var(--muted);font-size:12px;line-height:1.6;margin-top:18px}.stage{position:relative;min-height:550px;overflow:hidden;border-radius:16px;border:1px solid #44345e;background:radial-gradient(circle at 45% 40%,#312548,#1a142c 72%)}#office{display:block;width:100%;height:100%;min-height:550px;image-rendering:pixelated;cursor:grab}#office:active{cursor:grabbing}.stage-head{position:absolute;top:14px;left:15px;pointer-events:none;background:#19142ddf;border:1px solid #705393;border-radius:10px;padding:10px 14px}.stage-head b{display:block;font-size:16px}.stage-head small{color:#b5a0d7}.toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;background:#1b1536eb;border:1px solid #725296;border-radius:12px;padding:8px}.toolbar button{background:#4c3277;border:1px solid #8d62c7;border-radius:7px;padding:7px 11px}.right{display:flex;flex-direction:column;gap:13px}.progress{height:8px;background:#44335e;border-radius:9px;overflow:hidden;margin:7px 0 15px}.progress span{display:block;height:100%;background:linear-gradient(90deg,#7d50c4,#c79bff)}.item{display:flex;justify-content:space-between;gap:8px;font-size:12px}.empty{color:#c0afd6;line-height:1.6}.chip{font-size:11px;background:#3c2b5b;border:1px solid #8060a8;border-radius:20px;padding:4px 8px}.footer{margin-top:auto;font-size:12px;color:#bdaed4}#hint{position:absolute;right:14px;bottom:78px;background:#1d1539e8;border:1px solid #805caa;padding:9px 12px;border-radius:9px;font-size:12px;pointer-events:none}@media(max-width:1050px){.layout{grid-template-columns:160px minmax(0,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.stage{min-height:500px}}@media(max-width:650px){header{padding:12px;height:74px}.brand strong{font-size:21px}.tag{font-size:11px}.layout{display:block;padding:0 8px}.layout>nav{display:flex;flex-direction:row;overflow:auto;margin-bottom:8px}.layout>nav button{white-space:nowrap}.stage{min-height:420px}#office{min-height:420px}.right{display:block}.right>.panel{margin:9px 0}.toolbar button{font-size:11px;padding:6px}.stage-head{font-size:11px}.side-note{display:none}}
 </style></head><body>
 <header><div class="brand"><div class="logo">F</div><div><strong>FlyStudio</strong><small>AI Website Agency · Pixel Edition</small></div></div><div class="tag">◉ Bos Rafly</div></header>
-<div class="layout"><nav class="panel"><h3>MENU</h3><button class="active">⌂ Kantor</button><button id="original">▤ Sistem AI Asli</button><button id="team">♙ Tim AI (9)</button><p class="side-note">Kantor pixel 2.5D tanpa karakter. Avatar akan dipasang sebagai layer terpisah pada tahap berikutnya.</p></nav>
-<main class="stage"><div class="stage-head"><b>🏢 Kantor FlyStudio</b><small>Isometric pixel office · ruangan kosong</small></div><canvas id="office" width="1100" height="780" aria-label="Peta kantor isometric pixel art tanpa karakter"></canvas><div id="hint">Geser untuk memindahkan tampilan · Scroll untuk zoom</div><div class="toolbar"><button id="minus">− Zoom</button><button id="reset">Reset</button><button id="plus">+ Zoom</button></div></main>
+<div class="layout"><nav class="panel"><h3>MENU</h3><button class="active">⌂ Kantor</button><button id="original">▤ Sistem AI Asli</button><button id="team">♙ Tim AI (9)</button><p class="side-note">Kantor pixel 2.5D tanpa karakter. Sembilan avatar manusia pixel art ditampilkan terpisah dari interior dan mengikuti status backend.</p></nav>
+<main class="stage"><div class="stage-head"><b>🏢 Kantor FlyStudio</b><small>Isometric pixel office · 9 AI agents</small></div><canvas id="office" width="1100" height="780" aria-label="Peta kantor isometric pixel art tanpa karakter"></canvas><div id="hint">Geser untuk memindahkan tampilan · Scroll untuk zoom</div><div class="toolbar"><button id="minus">− Zoom</button><button id="reset">Reset</button><button id="plus">+ Zoom</button></div></main>
 <aside class="right"><section class="panel"><h3>▤ Proyek Aktif <span class="chip">Demo UI</span></h3><div class="item"><span>Landing Page Coffee Shop</span><b>65%</b></div><div class="progress"><span style="width:65%"></span></div><div class="item"><span>Website Jasa Design</span><b>40%</b></div><div class="progress"><span style="width:40%"></span></div><div class="item"><span>Landing Page Event</span><b>20%</b></div><div class="progress"><span style="width:20%;background:#f5b43f"></span></div><small class="empty" id="live-state">Menghubungkan backend AI…</small><div id="live-team" aria-live="polite"></div></section><section class="panel"><h3>◷ Aktivitas Tim</h3><p class="empty">9 posisi karyawan disiapkan. Tidak ada avatar pada map ini sesuai permintaan. Aktivitas AI asli tetap berada di halaman lama.</p><button class="action" id="open-ai">Buka Sistem AI →</button></section><div class="footer">FlyStudio · Pixel Office Prototype</div></aside></div>
 <script>
 (()=>{'use strict';const canvas=document.getElementById('office'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;const W=1100,H=780;let zoom=1,dx=0,dy=0,drag=null;const C={floor:'#7e698e',tile:'#9b82aa',edge:'#514160',wall:'#3d3157',wallTop:'#a48bb7',wood:'#b17c5c',woodTop:'#e4af80',screen:'#28233d',glow:'#aa7aff',green:'#66ad77',white:'#ded0ef'};
@@ -21,6 +21,49 @@ function plant(x,y){prism(x,y,.45,.45,.45,'#e4a77d','#9d654e');let [px,py]=iso(x
 function screen(x,y){prism(x,y,.95,.12,1.55,'#cbb4e5','#48355e');const p=iso(x+.13,y,1.34);rect(p[0]-2,p[1]-22,19,19,'#342750');rect(p[0]+1,p[1]-19,12,2,'#ad81ff');rect(p[0]+1,p[1]-14,16,2,'#8cddc2')}
 function bookshelf(x,y){prism(x,y,.55,1.55,1.5,'#ac7b67','#705066');for(let i=0;i<5;i++){const p=iso(x+.04,y+.15+i*.26,1.55);rect(p[0]-3,p[1]-12,8,12,['#9f83d2','#e0ad65','#a6c8dc'][i%3])}}
 function chair(x,y){prism(x,y,.68,.6,.5,'#4e3b6e','#302743');prism(x+.03,y+.46,.63,.12,1.08,'#6c548a','#3d3159')}
+// Nine independent pixel-human sprites. No animal avatars or 3D dependency.
+const STAFF=[
+ ['raka',5.1,3.2,'#7457c4','#4b2b27','#d5a27f'],
+ ['rina',3.1,3.5,'#c46c91','#32293c','#e7b995'],
+ ['bagas',7.2,3.4,'#cf8c47','#24202e','#bd805c'],
+ ['sari',2.3,8.4,'#a15dba','#5b3032','#e4ae8b'],
+ ['dimas',11.1,3.7,'#4e9b9c','#292c35','#c38d6d'],
+ ['luna',4.4,8.4,'#da779f','#4e3544','#f0c19f'],
+ ['kevin',11.9,6.1,'#5d83c7','#30272b','#d7a17e'],
+ ['adam',2.1,12.4,'#5da87b','#211c2b','#c78c67'],
+ ['nadia',4.4,12.9,'#b68b53','#49352e','#e6b18e']
+];
+let staffStatuses={},staffVisible=true,frame=0;
+function pixelHuman(slug,x,y,shirt,hair,skin,mode){
+ const p=iso(x,y,.2),scale=2.1,walk=mode==='walking',typing=mode==='typing',sitting=mode==='sitting'||typing;
+ const step=walk?Math.round(Math.sin(frame/5)*3):0;
+ const px=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(p[0]+a*scale),Math.round(p[1]+b*scale),Math.round(w*scale),Math.round(h*scale))};
+ // Shadow and boots
+ px(-6,0,13,2,'#35294188');
+ px(-5,-3+(walk?step:0),4,4,'#282238');px(2,-3-(walk?step:0),4,4,'#282238');
+ px(-5,-9,4,sitting?5:7,'#3b315a');px(2,-9,4,sitting?5:7,'#3b315a');
+ // torso and arms
+ px(-6,-19,13,11,shirt);px(-8,-17,3,8,skin);px(7,-17,3,typing?4:8,skin);
+ px(-5,-20,11,2,'#e6d5ed');px(-4,-26,9,7,skin);
+ px(-5,-28,11,4,hair);px(-6,-26,2,5,hair);
+ px(-2,-23,1,1,'#302332');px(3,-23,1,1,'#302332');
+ if(typing){px(6,-14+Math.round(Math.sin(frame/4)),4,2,skin);px(10,-11,3,2,'#d5bfdc')}
+ if(mode==='working'){px(9,-29,4,4,'#9dffcf')}
+ if(mode==='idle'){px(8,-28,2,2,'#b6a2d4')}
+ ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillStyle='#160f27';ctx.fillText(slug.toUpperCase(),p[0]+1,p[1]-62);ctx.fillStyle='#f6e9ff';ctx.fillText(slug.toUpperCase(),p[0],p[1]-63);
+}
+function modeFor(status){
+ const v=String(status||'').toLowerCase();
+ if(/walk|jalan|moving|pindah/.test(v))return 'walking';
+ if(/typ|ketik|coding|writing|menulis|generat|working|busy|bekerja|processing|active|thinking|research|design|review|test|seo/.test(v))return 'typing';
+ if(/sit|duduk/.test(v))return 'sitting';
+ return 'idle';
+}
+function drawStaff(){
+ if(!staffVisible)return;
+ for(const [slug,x,y,shirt,hair,skin] of STAFF){pixelHuman(slug,x,y,shirt,hair,skin,modeFor(staffStatuses[slug]))}
+}
+window.addEventListener('flystudio:status',event=>{staffStatuses=event.detail||{};redraw()});
 function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#191329';ctx.fillRect(0,0,W,H);ctx.save();ctx.translate(W/2+dx,H/2+dy);ctx.scale(zoom,zoom);ctx.translate(-W/2,-H/2);
 for(let i=0;i<16;i++)for(let j=0;j<16;j++){if(i+j<2||i+j>25)continue;tile(i,j,(i+j)%2?C.floor:C.tile)}
 prism(0,0,14,14,.18,'#8d749d','#443753');
@@ -42,10 +85,11 @@ prism(9.3,7,3.3,1.5,.72,'#d9a577','#90654d');for(const [x,y] of [[9.5,6.3],[11,6
 // lounge
 prism(7,11.5,2.2,.7,.6,'#a77dc7','#5b467b');prism(7,12.1,2.2,.22,1.1,'#b78ed6','#60477d');prism(10.2,11.5,1.4,.9,.5,'#b27cbb','#5e466f');plant(12.5,12.3);
 sign('Ruang Riset & Ide',565,210);sign('Studio Desain UI/UX',292,360);sign('Studio Skrip & Kode',834,360,'#44d4ba');sign('Ruang Meeting',656,448);sign('Frontend & Growth',345,573,'#f3b84d');sign('Lounge',654,652,'#ff8ecb');
-ctx.restore()}
+drawStaff();ctx.restore()}
 function redraw(){draw()}function setZoom(v){zoom=Math.max(.65,Math.min(2.1,v));redraw()}
 document.getElementById('plus').onclick=()=>setZoom(zoom+.15);document.getElementById('minus').onclick=()=>setZoom(zoom-.15);document.getElementById('reset').onclick=()=>{zoom=1;dx=dy=0;redraw()};canvas.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom+(e.deltaY<0?.1:-.1))},{passive:false});canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,dx,dy};canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;const r=canvas.getBoundingClientRect();dx=drag.dx+(e.clientX-drag.x)*W/r.width;dy=drag.dy+(e.clientY-drag.y)*H/r.height;redraw()});canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
-function original(){location.href='/kantor-flystudio.html'}document.getElementById('original').onclick=original;document.getElementById('open-ai').onclick=original;document.getElementById('team').onclick=()=>alert('9 AI: Raka, Rina, Bagas, Sari, Dimas, Luna, Kevin, Adam, Nadia. Avatar sengaja belum ditampilkan di kantor.');redraw()})();
+function original(){location.href='/kantor-flystudio.html'}document.getElementById('original').onclick=original;document.getElementById('open-ai').onclick=original;document.getElementById('team').onclick=()=>{staffVisible=!staffVisible;document.getElementById('team').textContent=staffVisible?'♙ Sembunyikan Tim AI':'♙ Tampilkan Tim AI';redraw()};
+let lastFrame=0;function animate(now){if(now-lastFrame>90){frame++;redraw();lastFrame=now}requestAnimationFrame(animate)}requestAnimationFrame(animate);redraw()})();
 </script><script>
 (function(){
 const names=['raka','rina','bagas','sari','dimas','luna','kevin','adam','nadia'];
@@ -57,6 +101,8 @@ async function refresh(){
  if(!data.success||!data.state)throw Error('Data status tidak valid');
  const stage=Number(data.state.currentStage)||0;
  document.getElementById('live-state').textContent='● Backend online · Tahap '+stage+' · Proyek: '+(data.state.topic||'Belum aktif');
+ const statusMap={};for(const slug of names)statusMap[slug]=data.state.employees?.[slug]?.status||'standby';
+ window.dispatchEvent(new CustomEvent('flystudio:status',{detail:statusMap}));
  const box=document.getElementById('live-team');
  box.replaceChildren();
  for(const slug of names){
