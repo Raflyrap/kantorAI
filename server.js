@@ -1271,16 +1271,28 @@ const server = http.createServer(async (req, res) => {
         }
         const discussion = meetingBrief.messages.filter(m => m.role === 'user').map(m => m.text).join('\\n');
         const topic = meetingTopic(meetingBrief.messages);
+        const userLines = meetingBrief.messages.filter(m => m.role === 'user').map(m => m.text);
+        const all = userLines.join('\\n');
+        const store = topic === 'toko online';
+        const phone = (all.match(/(?:whatsapp|wa|nomor|no\\.?)(?:[^0-9]{0,30})(62\\d{9,14}|08\\d{8,13})/i)||[])[1] || '';
+        const warranty = /(?:garansi|warranty)/i.test(all) ? (all.match(/(?:garansi|warranty)[^\\n]{0,35}/i)||[])[0] : (/ssebulan|sebulan|1 bulan/i.test(all) ? 'Garansi 1 bulan (jenis garansi belum dikonfirmasi)' : 'Garansi belum dikonfirmasi');
+        const productCount = (all.match(/(?:^|\\n)\\s*(\\d{1,4})\\s*(?:produk)?(?:\\n|$)/)||[])[1] || '';
+        const brand = (all.match(/(?:nama (?:toko|brand)|brand(?:-nya)?|tokonya)\\s*(?:adalah|:)?\\s*([^\\n,.]{2,50})/i)||[])[1] || 'Toko iPhone';
+        const designLine = userLines.filter(t => /dark|light|warna|aurora|minimalis|premium|modern|desain|tampilan|ui\\/ux/i.test(t)).join('; ');
+        const productInfo = userLines.filter(t => /iphone|produk|fisik|digital|operator|bypass|wifi|garansi|sebulan|30/i.test(t)).join('; ');
         const brief = {
           type: topic || 'website',
-          name: (discussion.match(/(?:nama(?:nya| brand)?|brand)\s*(?:adalah|:)?\s*([\\w -]{3,45})/i)||[])[1] || 'Website Baru',
-          purpose: discussion.slice(0, 1200),
-          pages: topic === 'toko online' ? 'Beranda, Produk, Kategori, Keranjang, Checkout, Tentang, Kontak' : 'Beranda, Tentang Kami, Layanan, Portofolio, Kontak',
-          content: discussion.slice(0, 4500),
-          design: discussion.slice(0, 1800),
-          features: discussion.slice(0, 2000),
-          contact: 'belum diberikan',
-          meetingTranscript: meetingBrief.messages
+          name: brand,
+          purpose: store ? 'Katalog dan pemesanan produk melalui WhatsApp' : 'Website sesuai diskusi rapat',
+          pages: store ? 'Beranda, Produk, Kategori, Detail Produk, Keranjang, Checkout, Tentang, FAQ, Kontak' : 'Beranda, Tentang Kami, Layanan, Portofolio, Kontak',
+          content: productInfo || all.slice(0, 3000),
+          design: designLine || 'Desain modern responsif, gaya visual perlu konfirmasi',
+          features: store ? 'Katalog produk, pencarian, filter varian, keranjang, checkout melalui WhatsApp' : 'Navigasi multi halaman dan kontak',
+          contact: phone ? 'WhatsApp: '+phone : 'Kontak belum diberikan',
+          productCount: productCount || 'belum dikonfirmasi',
+          warranty: warranty,
+          meetingTranscript: meetingBrief.messages,
+          rawRequirements: all
         };
         officeState.approvedBrief = brief;
         officeState.meetingActive = false;
