@@ -32,7 +32,7 @@ const ENV = loadEnv();
 const OPENROUTER_API_KEY = ENV.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || '';
 const BUDGET_CAP = parseFloat(ENV.BUDGET_CAP_PER_PROJECT_USD || '1.50');
 
-function makeOpenRouterRequest(selectedModel, messages) {
+function makeOpenRouterRequest(selectedModel, messages, maxTokens = 1500) {
   return new Promise((resolve, reject) => {
     if (!OPENROUTER_API_KEY) {
       return reject(new Error('OPENROUTER_API_KEY tidak ditemukan di environment.'));
@@ -42,7 +42,7 @@ function makeOpenRouterRequest(selectedModel, messages) {
       model: selectedModel,
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1500
+      max_tokens: maxTokens
     });
 
     const options = {
@@ -133,7 +133,7 @@ async function callAgent(agentConfig, inputMessages, projectId = 'default-projec
 
   // 3. Coba Model Utama
   try {
-    const res = await makeOpenRouterRequest(primaryModel, messages);
+    const res = await makeOpenRouterRequest(primaryModel, messages, overrideOptions.maxTokens || 1500);
     const { cost, totalTokens } = recordUsage(
       projectId,
       agentConfig.slug,
@@ -165,7 +165,7 @@ async function callAgent(agentConfig, inputMessages, projectId = 'default-projec
     // 4. Otomatis Panggil Fallback Model
     if (fallbackModel && fallbackModel !== primaryModel) {
       try {
-        const fallbackRes = await makeOpenRouterRequest(fallbackModel, messages);
+        const fallbackRes = await makeOpenRouterRequest(fallbackModel, messages, overrideOptions.maxTokens || 1500);
         const { cost, totalTokens } = recordUsage(
           projectId,
           agentConfig.slug,
