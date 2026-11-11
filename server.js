@@ -62,6 +62,29 @@ function loadEmployees() {
 }
 loadEmployees();
 
+// Independent per-employee conversation context. Kept separate per project and employee.
+const employeeConversations = new Map();
+function employeeHistory(projectId, slug) {
+  const key = projectId + ':' + slug;
+  if (!employeeConversations.has(key)) employeeConversations.set(key, []);
+  return employeeConversations.get(key);
+}
+function rememberEmployeeTurn(projectId, slug, userText, replyText) {
+  const history = employeeHistory(projectId, slug);
+  history.push({ role: 'user', content: userText.slice(0, 4000) });
+  history.push({ role: 'assistant', content: replyText.slice(0, 6000) });
+  if (history.length > 12) history.splice(0, history.length - 12);
+}
+const EMPLOYEE_THINKING_GUIDE = [
+  'Kamu adalah agen AI khusus dengan tanggung jawab, sudut pandang, dan keahlian sendiri.',
+  'Analisis permintaan secara cermat sebelum menjawab. Gunakan konteks percakapanmu sendiri.',
+  'Berikan keputusan, alasan ringkas, trade-off, dan langkah konkret yang sesuai dengan jabatanmu.',
+  'Jangan mengaku sudah meneliti, menguji, mengubah file, atau menjalankan alat jika belum benar-benar dilakukan.',
+  'Jika informasi kurang, ajukan pertanyaan spesifik; jika tidak yakin, jelaskan keterbatasannya.',
+  'Jangan mengambil alih tugas karyawan lain; koordinasikan melalui alur kerja yang sudah tersedia.',
+  'Jangan mengklaim memiliki kesadaran atau pikiran manusia. Kamu adalah asisten AI.'
+].join(' ');
+
 // 2. In-Memory Office State & 9-Stage State Machine for Website
 const officeState = {
   currentProjectId: 'default-project',
@@ -1301,9 +1324,18 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        const userPrompt = `Bos Rafly bertanya kepadamu: "${msg}". Konteks saat ini proyek: "${officeState.topic || 'Landing Page'}". Jawab dengan sopan, antusias, dan profesional sesuai peranmu sebagai ${conf.jabatan} di FlyStudio.`;
-        const result = await callAgent(conf, userPrompt, officeState.currentProjectId);
+        const projectId = officeState.currentProjectId;
+        const history = employeeHistory(projectId, slug);
+        const contextualConfig = {
+          ...conf,
+          system_prompt: [conf.system_prompt, EMPLOYEE_THINKING_GUIDE,
+            `Identitasmu: ${conf.nama}; jabatan: ${conf.jabatan}. Proyek aktif: ${officeState.topic || 'belum ada'}. Tahap: ${officeState.stageName}. Jawab dalam bahasa Indonesia secara jelas dan relevan.`
+          ].filter(Boolean).join('\\n\\n')
+        };
+        const messages = [...history, { role: 'user', content: msg.slice(0, 4000) }];
+        const result = await callAgent(contextualConfig, messages, projectId);
         finalReply = result.text;
+        rememberEmployeeTurn(projectId, slug, msg, finalReply);
         recordDialog(slug, 'rafly', finalReply, officeState.currentStage);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
