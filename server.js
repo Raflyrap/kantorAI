@@ -425,7 +425,7 @@ async function advanceFromCheckpoint1(selectedConceptId = 1, customFeedback = ''
   officeState.employees.bagas.status = 'idle';
 
   const chosenHeadline = cp1.selectedConcept.headline;
-  const chosenVisual = cp1.selectedConcept.visualDirection;
+  const chosenVisual = officeState.approvedBrief?.design || cp1.selectedConcept.visualDirection;
   const topic = officeState.topic || 'Website Modern';
 
   recordDialog('bagas', 'sari', `Sari, Bos Rafly menyetujui konsep: "${chosenHeadline}". Arah visual: "${chosenVisual}". Catatan: "${customFeedback}". Tolong tulis copy lengkap per section ya!`, 3);
@@ -1437,7 +1437,7 @@ const server = http.createServer(async (req, res) => {
         const matchConcept = msg.match(/[#\s](\d)/);
         if (matchConcept) selectedConceptId = parseInt(matchConcept[1], 10);
 
-        if (!/^(pilih\\s*)?(konsep\\s*)?[123]$|^(setuju|acc|lanjut)(\\s*(konsep\\s*)?[123])?$/i.test(msg)) {
+        if (!/^(?:(?:pilih|konsep)\\s*)?[123]$|^(?:setuju|acc|lanjut)(?:\\s*(?:konsep\\s*)?[123])?$/i.test(msg)) {
           const replyText = 'Untuk checkpoint konsep, pilih secara jelas: "pilih 1", "pilih 2", atau "pilih 3". Kalau ingin revisi, tulis kebutuhan revisinya; saya tidak akan menganggapnya persetujuan otomatis.';
           recordDialog('bagas', 'rafly', replyText, 3);
           res.writeHead(200, { 'Content-Type': 'application/json' });
