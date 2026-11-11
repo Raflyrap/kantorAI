@@ -56,7 +56,7 @@ function makeOpenRouterRequest(selectedModel, messages, maxTokens = 1500) {
         'HTTP-Referer': 'http://localhost/kantor-kreatif/',
         'X-Title': 'FlyStudio Virtual Office'
       },
-      timeout: 30000
+      timeout: maxTokens > 3000 ? 120000 : 30000
     };
 
     const req = https.request(options, (res) => {
@@ -88,7 +88,7 @@ function makeOpenRouterRequest(selectedModel, messages, maxTokens = 1500) {
 
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error(`Timeout memanggil model ${selectedModel} (30s)`));
+      reject(new Error(`Timeout memanggil model ${selectedModel} (${maxTokens > 3000 ? 120 : 30}s)`));
     });
 
     req.on('error', (err) => {
