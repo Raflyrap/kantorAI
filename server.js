@@ -149,6 +149,24 @@ function meetingFallbackQuestion() {
   if (user.length < 4) return 'UI/UX-nya mau warna dan gaya seperti apa? Ada referensi?';
   return 'Ada detail tambahan atau revisi sebelum rapat ditutup? Kalau sudah jelas, klik Bubarkan Rapat untuk mulai pengerjaan.';
 }
+// Ring-buffer diagnostics for the Output panel. Never expose API keys or raw credentials.
+const studioOutput = [];
+const nativeLog = console.log.bind(console);
+const nativeWarn = console.warn.bind(console);
+const nativeError = console.error.bind(console);
+function safeOutputPart(value) {
+  let result = typeof value === 'string' ? value : (value instanceof Error ? value.stack || value.message : (()=>{try{return JSON.stringify(value)}catch(e){return String(value)}})());
+  result = String(result).replace(/(sk-or-v1-[A-Za-z0-9_-]+)/g,'[REDACTED KEY]').replace(/(Bearer\\s+)[^\\s]+/gi,'$1[REDACTED]').replace(/(OPENROUTER_API_KEY\\s*[=:]\\s*)[^\\s]+/gi,'$1[REDACTED]');
+  return result.slice(0,4000);
+}
+['log','warn','error'].forEach(level=>{
+  const original = level==='log'?nativeLog:level==='warn'?nativeWarn:nativeError;
+  console[level]=function(...args){
+    original(...args);
+    studioOutput.push({time:new Date().toISOString(),level,text:args.map(safeOutputPart).join(' ').slice(0,6000)});
+    if(studioOutput.length>350)studioOutput.splice(0,studioOutput.length-350);
+  };
+});
 // 2. In-Memory Office State & 9-Stage State Machine for Website
 const officeState = {
   currentProjectId: 'default-project',
@@ -1219,6 +1237,17 @@ const server = http.createServer(async (req, res) => {
       },
       employeesConfig: EMPLOYEES_CONFIG
     }));
+    return;
+  }
+
+  // Read-only live diagnostics; restricted to local browser sessions.
+  if (pathname === '/api/output' && req.method === 'GET') {
+    const host = String(req.headers.host || '').split(':')[0].toLowerCase();
+    const remote = String(req.socket.remoteAddress || '');
+    const local = ['localhost','127.0.0.1','[::1]'].includes(host) && (remote==='::1'||remote==='127.0.0.1'||remote==='::ffff:127.0.0.1');
+    if (!local) {res.writeHead(403,{'Content-Type':'application/json'});res.end(JSON.stringify({success:false,error:'Local access only'}));return;}
+    res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});
+    res.end(JSON.stringify({success:true,entries:studioOutput}));
     return;
   }
 
