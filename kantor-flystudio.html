@@ -1387,6 +1387,32 @@ input,textarea,select{accent-color:#ad80f0}
 @keyframes fly-attention{50%{box-shadow:0 0 22px #e6ad5a66;transform:translate(-50%,-55%)}}
 @keyframes fly-done{from{opacity:0;transform:translate(-50%,-70%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media(prefers-reduced-motion:reduce){.fly-agent-status,.fly-agent-status svg{animation:none!important}}
+
+/* Inline SVG status takes over the original dot in every employee label */
+.lbl.agent .fly-inline-state{display:inline-flex!important;position:relative!important;flex:0 0 17px!important;width:17px!important;height:17px!important;min-width:17px!important;border:0!important;border-radius:50%!important;box-shadow:none!important;background:transparent!important;align-items:center;justify-content:center;vertical-align:middle;transform:none!important}
+.lbl.agent .fly-inline-state:before,.lbl.agent .fly-inline-state:after{display:none!important}
+.lbl.agent .fly-inline-state svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lbl.agent .fly-inline-state[data-state="working"]{color:#4b90ed}
+.lbl.agent .fly-inline-state[data-state="working"] svg{animation:fly-spin 1.4s linear infinite}
+.lbl.agent .fly-inline-state[data-state="waiting_approval"]{color:#d99016}
+.lbl.agent .fly-inline-state[data-state="waiting_approval"] svg{animation:fly-inline-pulse 1.2s ease-in-out infinite}
+.lbl.agent .fly-inline-state[data-state="done"]{color:#23a566}
+.lbl.agent .fly-inline-state[data-state="error"]{color:#db4c5d}
+.lbl.agent .fly-inline-state[data-state="meeting"]{color:#8464d7}
+.lbl.agent .fly-inline-state[data-state="idle"]{color:#87909f}
+@keyframes fly-inline-pulse{50%{opacity:.5;transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.lbl.agent .fly-inline-state svg{animation:none!important}}
+/* Diagnostic output drawer */
+#fly-output-toggle{position:fixed;right:18px;bottom:18px;z-index:10000;border:1px solid #ffffff30;background:#252139;color:#fff;padding:11px 16px;border-radius:12px;font:600 13px inherit;box-shadow:0 8px 28px #0007;cursor:pointer}
+#fly-output-drawer{position:fixed;right:18px;bottom:72px;width:min(630px,calc(100vw - 36px));height:min(460px,70vh);z-index:10001;background:#151421;color:#f3f1ff;border:1px solid #ffffff30;border-radius:16px;box-shadow:0 18px 60px #000b;display:none;flex-direction:column;overflow:hidden}
+#fly-output-drawer.is-open{display:flex}
+.fly-output-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 15px;border-bottom:1px solid #ffffff20;flex-wrap:wrap}
+.fly-output-head button{border:1px solid #ffffff35;background:#29253a;color:#fff;border-radius:8px;padding:7px 9px;cursor:pointer}
+#fly-output-lines{flex:1;overflow:auto;padding:12px;font:12px/1.6 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.fly-output-line{border-bottom:1px solid #ffffff0d;padding:5px 0}
+.fly-output-line[data-level="error"]{color:#ff8e9d}
+.fly-output-line[data-level="warn"]{color:#ffd08b}
+.fly-output-line[data-level="log"]{color:#d5d8e4}
 </style>
 </head>
 <body>
@@ -2891,7 +2917,7 @@ function initScene(){
     var oe=document.createElement('div');oe.className='lbl agent';oe.style.setProperty('--c','#8E79D6');oe.innerHTML='<i></i><b>'+esc(C.owner.nama)+'</b><span class="role">'+esc(C.owner.peran)+'</span>';oe.style.pointerEvents='none';labelsEl.appendChild(oe);labels.push({el:oe,obj:oc.g,dy:oc.dy});
     actors.forEach(function(ac){
       var el=document.createElement('button');el.className='lbl agent';el.type='button';el.tabIndex=-1;el.style.setProperty('--c',ac.st.warna);
-      el.innerHTML='<i></i><b>'+esc(ac.st.nama)+'</b><span class="role">'+esc(ROLES[ac.st.peran].label)+'</span>';
+      el.innerHTML='<i class="fly-inline-state" aria-hidden="true"></i><b>'+esc(ac.st.nama)+'</b><span class="role">'+esc(ROLES[ac.st.peran].label)+'</span>';
       el.addEventListener('click',function(){selectAgent(ac.st.id);});
       labelsEl.appendChild(el);
       ac.el=el;
@@ -2974,37 +3000,27 @@ function initScene(){
         }
       }
 
-      // SVG status icon above the 3D employee, driven by real backend state.
+      // Status SVG replaces the existing little circle to the left of each name.
       var stateKey = hEmp.status === 'waiting_approval' ? 'waiting_approval'
         : hEmp.status === 'working' ? 'working'
         : (hEmp.status === 'done' || hEmp.status === 'completed' || hEmp.status === 'finished') ? 'done'
         : (hEmp.status === 'error' || hEmp.status === 'failed') ? 'error'
         : MEET.active ? 'meeting' : 'idle';
-      if (stateKey !== 'idle') {
-        if (!ac.statusIconEl) {
-          var statusEl = document.createElement('div');
-          statusEl.className = 'fly-agent-status';
-          statusEl.setAttribute('role','img');
-          labelsEl.appendChild(statusEl);
-          ac.statusIconEl = statusEl;
-          labels.push({el:statusEl,obj:ac.c.g,dy:ac.c.dy+0.85});
-        }
-        var paths = {
+      var dot = ac.el && ac.el.querySelector('.fly-inline-state');
+      if(dot && dot.dataset.state!==stateKey){
+        var paths={
           working:'<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5m0-5 4 2"/>',
           waiting_approval:'<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/>',
           done:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
           error:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/>',
-          meeting:'<path d="M4 8h16v10H9l-5 3V8Z"/><path d="M8 12h8m-8 3h5"/>'
+          meeting:'<path d="M4 8h16v10H9l-5 3V8Z"/><path d="M8 12h8m-8 3h5"/>',
+          idle:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/>'
         };
-        if (ac.statusIconEl.dataset.state !== stateKey) {
-          ac.statusIconEl.dataset.state = stateKey;
-          ac.statusIconEl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[stateKey]+'</svg>';
-          ac.statusIconEl.setAttribute('aria-label', {working:'Sedang memproses',waiting_approval:'Menunggu konfirmasi',done:'Selesai',error:'Terjadi masalah',meeting:'Sedang rapat'}[stateKey]);
-          ac.statusIconEl.title = ac.statusIconEl.getAttribute('aria-label');
-        }
-        ac.statusIconEl.style.display = 'flex';
-      } else if (ac.statusIconEl) {
-        ac.statusIconEl.style.display = 'none';
+        dot.dataset.state=stateKey;
+        dot.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[stateKey]+'</svg>';
+        var stateText={working:'Memproses',waiting_approval:'Menunggu konfirmasi',done:'Selesai',error:'Error',meeting:'Rapat',idle:'Standby'}[stateKey];
+        ac.el.title=ac.st.nama+' • '+stateText;
+        ac.el.setAttribute('aria-label',ac.el.title);
       }
 
       // Jika Hermes memerintahkan istirahat/pantry
@@ -3665,6 +3681,47 @@ if(window.claude&&window.claude.use){
       previous[n]=status;
     });
   },900);
+})();
+</script>
+
+<script>
+(function(){
+  var opened=false,allEntries=[],filter='all',lastSignature='';
+  var toggle=document.createElement('button');toggle.id='fly-output-toggle';toggle.type='button';toggle.textContent='⌘ Output';toggle.title='Lihat log proses, peringatan, dan error';
+  var drawer=document.createElement('section');drawer.id='fly-output-drawer';drawer.setAttribute('aria-label','Output dan diagnostik FlyStudio');
+  drawer.innerHTML='<div class="fly-output-head"><strong>Output • Diagnostik</strong><div style="display:flex;gap:6px;align-items:center"><select id="fly-output-filter" aria-label="Filter log" style="background:#29253a;color:white;border:1px solid #ffffff35;border-radius:8px;padding:7px"><option value="all">Semua</option><option value="error">Error</option><option value="warn">Warning</option><option value="log">Proses</option></select><button id="fly-output-copy" type="button">Salin</button><button id="fly-output-close" type="button">Tutup</button></div></div><div id="fly-output-lines" role="log" aria-live="off">Menunggu output server...</div>';
+  document.body.appendChild(toggle);document.body.appendChild(drawer);
+  var lines=drawer.querySelector('#fly-output-lines');
+  function render(){
+    var nearBottom=lines.scrollHeight-lines.scrollTop-lines.clientHeight<80;
+    lines.textContent='';
+    var list=allEntries.filter(function(e){return filter==='all'||e.level===filter});
+    if(!list.length){lines.textContent='Belum ada log untuk filter ini.';return;}
+    var frag=document.createDocumentFragment();
+    list.forEach(function(e){var div=document.createElement('div');div.className='fly-output-line';div.dataset.level=e.level;div.textContent='['+new Date(e.time).toLocaleTimeString('id-ID')+'] ['+e.level.toUpperCase()+'] '+e.text;frag.appendChild(div)});
+    lines.appendChild(frag);if(nearBottom)lines.scrollTop=lines.scrollHeight;
+  }
+  async function refresh(){
+    if(!opened)return;
+    try{
+      var res=await fetch('http://localhost:3001/api/output',{cache:'no-store'});
+      if(!res.ok)throw Error('HTTP '+res.status);
+      var data=await res.json();
+      if(!data.success)throw Error(data.error||'Gagal membaca output');
+      var next=data.entries||[];
+      var signature=next.length+':'+(next.length?next[next.length-1].time+next[next.length-1].text:'');
+      if(signature!==lastSignature){allEntries=next;lastSignature=signature;render();}
+    }catch(e){lines.textContent='Tidak bisa mengambil output server: '+e.message+'\nPastikan node server.js berjalan di localhost:3001.'}
+  }
+  toggle.onclick=function(){opened=!opened;drawer.classList.toggle('is-open',opened);toggle.setAttribute('aria-expanded',String(opened));if(opened)refresh()};
+  drawer.querySelector('#fly-output-close').onclick=function(){opened=false;drawer.classList.remove('is-open');toggle.setAttribute('aria-expanded','false')};
+  drawer.querySelector('#fly-output-filter').onchange=function(e){filter=e.target.value;render()};
+  drawer.querySelector('#fly-output-copy').onclick=function(){
+    var value=allEntries.filter(function(e){return filter==='all'||e.level===filter}).map(function(e){return '['+e.time+'] ['+e.level+'] '+e.text}).join('\n');
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).catch(function(){});
+    else {var t=document.createElement('textarea');t.value=value;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  };
+  setInterval(refresh,2000);
 })();
 </script>
 </body>
