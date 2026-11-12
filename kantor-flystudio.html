@@ -1373,6 +1373,20 @@ input,textarea,select{accent-color:#ad80f0}
 @media(max-width:900px){.top{gap:12px;flex-wrap:wrap}.main{gap:10px}.stage,.panel{border-radius:15px}}
 @media(max-width:600px){.top{padding:12px}.brand h1,.brand #title{font-size:clamp(20px,5vw,28px)}.rooms{gap:6px}.stage{border-radius:12px}.hermes-live-ticker{max-width:100%}}
 @media(prefers-reduced-motion:reduce){.rooms button,.rooms .room-btn,.ctl,.staff-subcard{transition:none!important}}
+
+/* FlyStudio floating SVG employee activity indicators */
+.fly-agent-status{position:absolute;display:flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:13px;transform:translate(-50%,-50%);background:rgba(20,19,34,.94);border:1px solid rgba(255,255,255,.2);box-shadow:0 8px 24px #0007;pointer-events:none;z-index:52;transition:background .25s,border-color .25s}
+.fly-agent-status svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fly-agent-status[data-state="working"]{color:#9acaff;border-color:#7a9fffaa}
+.fly-agent-status[data-state="working"] svg{animation:fly-spin 2s linear infinite}
+.fly-agent-status[data-state="waiting_approval"]{color:#ffce7c;border-color:#f3b553aa;animation:fly-attention 1.6s ease-in-out infinite}
+.fly-agent-status[data-state="done"]{color:#86e8b0;border-color:#53c58baa;animation:fly-done .45s ease-out both}
+.fly-agent-status[data-state="error"]{color:#ff929c;border-color:#f16d78aa}
+.fly-agent-status[data-state="meeting"]{color:#c3adff;border-color:#a58affaa}
+@keyframes fly-spin{to{transform:rotate(360deg)}}
+@keyframes fly-attention{50%{box-shadow:0 0 22px #e6ad5a66;transform:translate(-50%,-55%)}}
+@keyframes fly-done{from{opacity:0;transform:translate(-50%,-70%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media(prefers-reduced-motion:reduce){.fly-agent-status,.fly-agent-status svg{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2960,19 +2974,37 @@ function initScene(){
         }
       }
 
-      // Check status waiting_approval (Ikon '!' kuning 3D di atas kepala)
-      if (hEmp.status === 'waiting_approval') {
-        if (!ac.alertBadgeEl) {
-          var ab = document.createElement('div');
-          ab.className = 'status-alert-badge';
-          ab.textContent = '!';
-          labelsEl.appendChild(ab);
-          ac.alertBadgeEl = ab;
-          labels.push({ el: ab, obj: ac.c.g, dy: ac.c.dy + 0.85 });
+      // SVG status icon above the 3D employee, driven by real backend state.
+      var stateKey = hEmp.status === 'waiting_approval' ? 'waiting_approval'
+        : hEmp.status === 'working' ? 'working'
+        : (hEmp.status === 'done' || hEmp.status === 'completed' || hEmp.status === 'finished') ? 'done'
+        : (hEmp.status === 'error' || hEmp.status === 'failed') ? 'error'
+        : MEET.active ? 'meeting' : 'idle';
+      if (stateKey !== 'idle') {
+        if (!ac.statusIconEl) {
+          var statusEl = document.createElement('div');
+          statusEl.className = 'fly-agent-status';
+          statusEl.setAttribute('role','img');
+          labelsEl.appendChild(statusEl);
+          ac.statusIconEl = statusEl;
+          labels.push({el:statusEl,obj:ac.c.g,dy:ac.c.dy+0.85});
         }
-        ac.alertBadgeEl.style.display = 'flex';
-      } else if (ac.alertBadgeEl) {
-        ac.alertBadgeEl.style.display = 'none';
+        var paths = {
+          working:'<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5m0-5 4 2"/>',
+          waiting_approval:'<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/>',
+          done:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+          error:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/>',
+          meeting:'<path d="M4 8h16v10H9l-5 3V8Z"/><path d="M8 12h8m-8 3h5"/>'
+        };
+        if (ac.statusIconEl.dataset.state !== stateKey) {
+          ac.statusIconEl.dataset.state = stateKey;
+          ac.statusIconEl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+paths[stateKey]+'</svg>';
+          ac.statusIconEl.setAttribute('aria-label', {working:'Sedang memproses',waiting_approval:'Menunggu konfirmasi',done:'Selesai',error:'Terjadi masalah',meeting:'Sedang rapat'}[stateKey]);
+          ac.statusIconEl.title = ac.statusIconEl.getAttribute('aria-label');
+        }
+        ac.statusIconEl.style.display = 'flex';
+      } else if (ac.statusIconEl) {
+        ac.statusIconEl.style.display = 'none';
       }
 
       // Jika Hermes memerintahkan istirahat/pantry
