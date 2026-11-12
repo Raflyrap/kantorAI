@@ -105,12 +105,12 @@ function intakeSummary() {
 }
 function pagesFromBrief(brief) {
   const raw = String(brief.pages || '');
-  const requested = raw.split(/[,;\\n]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
+  const requested = raw.split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
   const names = requested.length ? requested : ['Beranda', 'Tentang Kami', 'Layanan', 'Kontak'];
   if (!names.some(n => /beranda|home|utama/i.test(n))) names.unshift('Beranda');
   const used = new Set();
   return names.map((name, i) => {
-    let slug = i === 0 ? 'index' : name.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    let slug = i === 0 ? 'index' : name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) slug = 'halaman-' + i;
     let unique = slug, k = 2;
     while (used.has(unique)) unique = slug + '-' + k++;
@@ -125,7 +125,7 @@ function buildProjectPage(brief, page, pages, pageText) {
   const brand = escapeHtml(brief.name);
   const heading = escapeHtml(page.name);
   const nav = pages.map(p => '<a href="' + encodeURIComponent(p.file) + '"' + (p.file === page.file ? ' aria-current="page"' : '') + '>' + escapeHtml(p.name) + '</a>').join('');
-  const paragraphs = String(pageText || brief.content).split(/\\n+/).filter(Boolean).slice(0, 7).map(p => '<p>' + escapeHtml(p) + '</p>').join('');
+  const paragraphs = String(pageText || brief.content).split(/\n+/).filter(Boolean).slice(0, 7).map(p => '<p>' + escapeHtml(p) + '</p>').join('');
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="' + escapeHtml(brief.purpose) + '"><title>' + heading + ' | ' + brand + '</title><style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;font:16px/1.7 system-ui,sans-serif;background:#10111c;color:#f5f3ff}header{position:sticky;top:0;background:#17182aee;backdrop-filter:blur(16px);border-bottom:1px solid #ffffff22;padding:18px max(5vw,20px);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.logo{font-size:22px;font-weight:800;color:#ddd0ff;text-decoration:none}nav{display:flex;gap:18px;flex-wrap:wrap}nav a{color:#c9c7d6;text-decoration:none}nav a:hover,nav a[aria-current]{color:#b99cff}main{max-width:1050px;margin:auto;padding:clamp(55px,9vw,110px) 24px;min-height:70vh}small{color:#b99cff;font-weight:700;letter-spacing:.1em;text-transform:uppercase}h1{font-size:clamp(38px,6vw,70px);letter-spacing:-.055em;line-height:1.08;margin:18px 0 24px}p{color:#c8c5d8;max-width:760px}.content{background:#1c1b30;border:1px solid #ffffff1c;border-radius:22px;padding:clamp(24px,4vw,45px);margin-top:30px}footer{border-top:1px solid #ffffff20;padding:30px 5vw;color:#aaa6bd}a:focus-visible{outline:2px solid #b99cff;outline-offset:4px}@media(max-width:600px){header{align-items:flex-start}nav{gap:12px}}</style></head><body><header><a class="logo" href="index.html">' + brand + '</a><nav aria-label="Navigasi utama">' + nav + '</nav></header><main><small>' + escapeHtml(brief.type) + '</small><h1>' + heading + '</h1><p>' + escapeHtml(brief.purpose) + '</p><div class="content">' + (paragraphs || '<p>Konten halaman ini belum diberikan. Silakan lengkapi materi sesuai kebutuhan bisnis.</p>') + '</div></main><footer>' + brand + ' &middot; ' + escapeHtml(brief.contact) + '</footer></body></html>';
 }
 
@@ -583,7 +583,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
           'Design system dari Luna: ' + JSON.stringify(ds).slice(0, 6000),
           'Copywriting dari Sari: ' + JSON.stringify(copyData).slice(0, 6000)
         ].join('\\n\\n');
-        const ai = await callAgent(adamConf, prompt, pId, { maxTokens: 7500 });
+        const ai = await callAgent(adamConf, prompt + '\nPENTING: Maksimal 3500 token HTML ringkas. Gunakan CSS pendek, JS seperlunya. Tutup semua tag termasuk </html>.', pId, { maxTokens: 7500 });
         generatedHtml = ai.text.replace(/^\s*```(?:html)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
         if (!/<!doctype html|<html[\s>]/i.test(generatedHtml) || !generatedHtml.toLowerCase().includes('</html>')) {
           throw new Error('HTML output incomplete');
@@ -595,6 +595,7 @@ async function advanceFromCheckpoint2(approved = true, notes = '') {
       } catch (err) {
         console.warn('[Adam] AI generation fallback for ' + page.file + ': ' + err.message);
         generatedHtml = buildProjectPage(approvedBrief, page, pages, approvedBrief.content);
+        console.warn('[Adam] Used basic fallback for ' + page.file + '; check OpenRouter budget and model response.');
       }
       fs.writeFileSync(path.join(webDir, page.file), generatedHtml, 'utf8');
       console.log('[Adam] Page ready: ' + page.file);
